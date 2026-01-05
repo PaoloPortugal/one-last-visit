@@ -16,11 +16,29 @@ function _init()
 end
 
 function _update60()
+    update_dialogue()
 
+    -- close dialogue with x
+    if dialogue.active and btnp(❎) then
+        close_dialogue()
+    end
+
+    if btnp(🅾️) and not dialogue.active then
+            spawn_dialogue(20,120,"Hello, World!")
+    end
 end
 
 function _draw()
+    cls(1)
 
+    draw_dialogue()
+
+    -- show instructions
+    if not dialogue.active then
+        print("press z to spawn dialogue",2,2,7)
+    else
+        print("press x to close",2,2,7)
+    end
 end
 
 __gfx__
