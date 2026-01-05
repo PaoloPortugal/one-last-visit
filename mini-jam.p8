@@ -7,14 +7,21 @@ __lua__
 -->8
 -- main
 
--->8
--- gameplay
+#include gameplay.lua
+#include visuals.lua
+#include entities.lua
 
--->8
--- visuals
+function _init()
 
--->8
--- entities
+end
+
+function _update60()
+
+end
+
+function _draw()
+
+end
 
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
