@@ -16,7 +16,7 @@ flags={
 -- the player and camera logic are taken and adapted from the advanced micro platformer - starting kit by @matthughson
 -- it can be found here: https://www.lexaloffle.com/bbs/?tid=28793
 
-function make_player(s_x,s_y)
+function make_player(s_x, s_y)
 -- creates a new player character
     local p={
         x=s_x,
@@ -190,6 +190,152 @@ function make_player(s_x,s_y)
         end,
     }
     return p
+end
+
+function make_chair(s_x, s_y)
+-- creates a new player character
+    local c={
+        x=s_x,
+        y=s_y,
+        dx=0, -- speed on x axis
+        dy=0, -- speed on y axis
+        acc=0.05,
+        max_dx=1/2,
+        max_dy=1/2,
+
+        w=8, -- width
+        h=8, -- height
+
+        -- call once per frame
+        update=function(self)
+            local btns=self:input()
+            self:handle_horizontal_movement()
+            self:handle_vertical_movement()
+            self:handle_animations(btns)
+        end,
+
+        input=function(self)
+            local bl=false
+            local br=false
+
+            local bu=false
+            local bd=false
+
+            if btn(⬅️) then
+                if self.dx>0 then self.dx=0 end
+                self.dx-=self.acc
+                bl=true
+            elseif btn(➡️) then
+                if self.dx<0 then self.dx=0 end
+                self.dx+=self.acc
+                br=true
+            else
+                self.dx=0
+            end
+            self.dx=mid(-self.max_dx,self.dx,self.max_dx) -- limit horizontal speed
+
+            if btn(⬆️) then
+                if self.dy>0 then self.dy=0 end
+                self.dy-=self.acc
+                bu=true
+            elseif btn(⬇️) then
+                if self.dy<0 then self.dy=0 end
+                self.dy+=self.acc
+                bd=true
+            else
+                self.dy=0
+            end
+            self.dy=mid(-self.max_dy,self.dy,self.max_dy) -- limit vertical speed
+
+            -- normalize diagonal speed
+            if self.dx!=0 and self.dy!=0 then
+                local norm=sqrt(self.dx^2+self.dy^2)
+                self.dx=self.dx/norm
+                self.dy=self.dy/norm
+            end
+
+            return {bl=bl,br=br,bu=bu,bd=bd}
+        end,
+
+        handle_horizontal_movement=function(self)
+            self.x+=self.dx
+
+            local col,dir=self:check_solid_horizontal()
+            local offset=self.w/2
+            if col then
+                self.dx=0
+                if dir==1 then -- right
+                    self.x=flr((self.x+(offset))/8)*8-(offset)
+                else -- left
+                    self.x=ceil((self.x-(offset))/8)*8+(offset)
+                end
+            end
+        end,
+
+        handle_vertical_movement=function(self)
+            self.y+=self.dy
+
+            local col,dir=self:check_solid_vertical()
+            local offset=self.h/2
+            if col then
+                self.dy=0
+                if dir==1 then -- down
+                    self.y=flr((self.y+(offset))/8)*8-(offset)
+                else -- up
+                    self.y=ceil((self.y-(offset))/8)*8+(offset)
+                end
+            end
+        end,
+
+        check_solid_vertical=function(self)
+            local offset=self.h/2
+            for i=-(self.w/3),(self.w/3),2 do
+                if self.dy<0 and (fget(mget((self.x+i)/8,(self.y-(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(self.y-(offset))/8),flags.barrier)) then return true,-1
+                elseif self.dy>=0 and (fget(mget((self.x+i)/8,(self.y+(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(self.y+(offset))/8),flags.barrier)) then return true,1 end
+            end
+            return false,nil -- didnt hit a solid tile
+        end,
+
+        check_solid_horizontal=function(self)
+            if self.x<=7 then return true end
+            local offset=self.w/2
+            for i=-(self.w/3),(self.w/3),2 do
+                if self.dx>0 and (fget(mget((self.x+(offset))/8,(self.y+i)/8),flags.solid) or fget(mget((self.x+(offset))/8,(self.y+i)/8),flags.barrier)) then return true,1
+                elseif self.dx<0 and (fget(mget((self.x-(offset))/8,(self.y+i)/8),flags.solid) or fget(mget((self.x-(offset))/8,(self.y+i)/8),flags.barrier)) then return true,-1 end
+            end
+            return false,nil -- didnt hit a solid tile
+        end,
+
+        handle_animations=function(self, btns)
+            local bl=btns.bl
+            local br=btns.br
+
+            self:set_anim("still")
+
+            -- animation timer
+            self.anim_timer-=1
+            if self.anim_timer<=0 then
+                self.currsprite+=1
+                local a=self.anims[self.curranim]
+                self.anim_timer=a.frames
+                if self.currsprite>#a.sprites then self.currsprite=1 end -- loop
+            end
+        end,
+
+        draw=function(self)
+            local a=self.anims[self.curranim]
+            local sprite=a.sprites[self.currsprite]
+            pal(1,0) -- map color 1 to behave as black so the eyes look black like they should and we can keep using the actual black as transparent
+            spr(sprite,
+                self.x-(self.w/2),
+                self.y-(self.h/2),
+                self.w/8,self.h/8,
+                self.flipx,
+                false)
+            pal() -- reset the colors to work as normal
+        end,
+    }
+    return c
 end
 
 function make_camera(target)
