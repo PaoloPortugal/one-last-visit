@@ -23,8 +23,8 @@ function _update60()
         close_dialogue()
     end
 
-    if btnp(🅾️) and not dialogue.active then
-            spawn_dialogue(20,120,"Hello, World!")
+    if btnp(❎) and not dialogue.active then
+            spawn_dialogue(20,120,{"Hello, World!","Goodbye, World!"})
     end
 end
 
@@ -35,9 +35,9 @@ function _draw()
 
     -- show instructions
     if not dialogue.active then
-        print("press z to spawn dialogue",2,2,7)
+        print("press ❎ to spawn dialogue",2,2,7)
     else
-        print("press x to close",2,2,7)
+        print("press z for next line",2,2,7)
     end
 end
 

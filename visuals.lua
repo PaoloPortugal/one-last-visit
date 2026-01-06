@@ -7,6 +7,8 @@ dialogue={
     active=false,
     x=0,
     y=0,
+    texts={}, -- table of dialogue strings
+    current_idx=1, -- which dialogue we're on
     text="",
     lines={},
     width=0,
@@ -14,25 +16,56 @@ dialogue={
     char_idx=0,
     char_timer=0,
     char_speed=1, -- frames per char (lower=faster)
-    char_width=4, -- pixels per char (4=normal, 3=small)
-    line_height=6, -- pixels per line (6=normal, 5=small)
     max_width=100, -- max box width in pixels
     padding=4,
     border=1
 }
 
-function spawn_dialogue(x,y,text)
+function swap_case(text)
+    local result=""
+    for i=1,#text do
+        local c=sub(text,i,i)
+        local byte=ord(c)
+        -- uppercase (65-90) -> lowercase (97-122)
+        if byte>=65 and byte<=90 then
+            result=result..chr(byte+32)
+        -- lowercase (97-122) -> uppercase (65-90)
+        elseif byte>=97 and byte<=122 then
+            result=result..chr(byte-32)
+        else
+            result=result..c
+        end
+    end
+    return result
+end
+
+function spawn_dialogue(x,y,texts)
     dialogue.active=true
     dialogue.x=x
     dialogue.y=y
-    dialogue.text=text
+    -- handle single string or table
+    if type(texts)=="string" then
+        dialogue.texts={swap_case(texts)}
+    else
+        local swapped={}
+        for t in all(texts) do
+            add(swapped,swap_case(t))
+        end
+        dialogue.texts=swapped
+    end
+    dialogue.current_idx=1
+    load_current_dialogue()
+end
+
+function load_current_dialogue()
+    dialogue.text=dialogue.texts[dialogue.current_idx]
     dialogue.char_idx=0
     dialogue.char_timer=0
     -- pre-calculate word wrapping
-    dialogue.lines=wrap_text(text,dialogue.max_width)
+    dialogue.lines=wrap_text(dialogue.text,dialogue.max_width)
     -- calculate box dimensions
     dialogue.width=get_max_line_width(dialogue.lines)
-    dialogue.height=#dialogue.lines*dialogue.line_height
+    dialogue.height=#dialogue.lines*6
 end
 
 function wrap_text(text,max_w)
@@ -41,7 +74,7 @@ function wrap_text(text,max_w)
     local line=""
     local line_w=0
     for word in all(words) do
-        local word_w=#word*dialogue.char_width
+        local word_w=#word*4
         if line_w+word_w<=max_w then
             -- word fits on current line
             if line=="" then
@@ -49,7 +82,7 @@ function wrap_text(text,max_w)
                 line_w=word_w
             else
                 line=line.." "..word
-                line_w=line_w+dialogue.char_width+word_w
+                line_w=line_w+4+word_w
             end
         else
             -- need new line
@@ -90,12 +123,21 @@ end
 function get_max_line_width(lines)
     local max_w=0
     for line in all(lines) do
-        local w=#line*dialogue.char_width
+        local w=#line*4
         if w>max_w then
             max_w=w
         end
     end
     return max_w
+end
+
+function is_dialogue_finished()
+    -- count total chars in current dialogue
+    local total_chars=0
+    for line in all(dialogue.lines) do
+        total_chars+=#line
+    end
+    return dialogue.char_idx>=total_chars
 end
 
 function update_dialogue()
@@ -111,6 +153,21 @@ function update_dialogue()
         if dialogue.char_timer>=dialogue.char_speed then
             dialogue.char_timer=0
             dialogue.char_idx+=1
+        end
+    end
+    -- handle z button press
+    if btnp(4) then -- z button
+        if is_dialogue_finished() then
+            -- move to next dialogue or close
+            if dialogue.current_idx<#dialogue.texts then
+                dialogue.current_idx+=1
+                load_current_dialogue()
+            else
+                close_dialogue()
+            end
+        else
+            -- skip to end of current dialogue
+            dialogue.char_idx=total_chars
         end
     end
 end
@@ -138,15 +195,10 @@ function draw_dialogue()
         local visible_chars=min(#line,d.char_idx-chars_drawn)
         if visible_chars>0 then
             local visible_text=sub(line,1,visible_chars)
-            -- use small font if char_width is 3
-            if d.char_width==3 then
-                print("\^w"..visible_text,tx,ty,7)
-            else
-                print(visible_text,tx,ty,7)
-            end
+            print(visible_text,tx,ty,7)
         end
         chars_drawn+=#line
-        ty+=d.line_height
+        ty+=6
         if chars_drawn>=d.char_idx then
             break
         end
