@@ -1,7 +1,6 @@
 -- visuals
 
 -- dialogue system by claude
--- spawns boxes at x,y (bottom-left)
 
 dialogue={
     active=false,
