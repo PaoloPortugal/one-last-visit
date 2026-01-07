@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 43
 __lua__
 -- mINI jAM gAME
--- bY: pAOLO "MOOFYS" pORTUGAL, aGUSTIN "eLHOMBRELLAVE" cABRAL, mANUEL "mAKU" kARADJIAN
+-- bY: "MOOFYS", "eLHOMBRELLAVE", "mAKU"
 
 -->8
 -- main
