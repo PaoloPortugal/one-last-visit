@@ -2,10 +2,15 @@
 
 sprites={
     player={
-        still_1=1,
-        still_2=3,
-        walk_1=5,
-        walk_2=7,
+        still=1,
+        walk={
+            ver_1=3,
+            ver_2=5,
+            hor_1=7,
+            hor_2=9,
+            hor_3=11
+        },
+        pull=13
     },
     chair=16,
     interact=32
@@ -41,13 +46,21 @@ function make_player(s_x,s_y)
             -- frames indicates how long each sprite is shown
             -- sprites indicates which sprites are shown
             ["still"]={
-                frames=30,
-                sprites={sprites.player.still_1,sprites.player.still_2}
+                frames=60,
+                sprites={sprites.player.still}
             },
-            ["walk"]={
-                frames=20,
-                sprites={sprites.player.walk_1,sprites.player.walk_2}
+            ["walk_ver"]={
+                frames=15,
+                sprites={sprites.player.walk.ver_1,sprites.player.walk.ver_2}
             },
+            ["walk_hor"]={
+                frames=15,
+                sprites={sprites.player.walk.hor_1,sprites.player.walk.hor_2,sprites.player.walk.hor_1,sprites.player.walk.hor_3}
+            },
+            ["pull"]={
+                frames=60,
+                sprites={sprites.player.pull}
+            }
         },
 
         -- animation variables
@@ -67,7 +80,7 @@ function make_player(s_x,s_y)
 
         -- call once per frame
         update=function(self)
-            self:check_interactions()
+            self:check_objects()
             self:input()
             self:handle_horizontal_movement()
             self:handle_vertical_movement()
@@ -175,7 +188,13 @@ function make_player(s_x,s_y)
         end,
 
         handle_animations=function(self)
-            if self.dx!=0 then self:set_anim("walk") else self:set_anim("still") end
+            if self.dx!=0 then
+                self:set_anim("walk_hor")
+            elseif self.dy!=0 then
+                self:set_anim("walk_ver")
+            else
+                self:set_anim("still")
+            end
 
             -- animation timer
             self.anim_timer-=1
@@ -201,13 +220,13 @@ function make_player(s_x,s_y)
             -- draw 3x2 sprite grid
             local x_base=self.x-(self.w/2)
             local y_base=self.y-(self.h/2)
-            
-            spr(sprite_tl, x_base, y_base, 1, 1, self.flipx, false)       -- top left
-            spr(sprite_tr, x_base+8, y_base, 1, 1, self.flipx, false)     -- top right
-            spr(sprite_ml, x_base, y_base+8, 1, 1, self.flipx, false)     -- middle left
-            spr(sprite_mr, x_base+8, y_base+8, 1, 1, self.flipx, false)   -- middle right
-            spr(sprite_bl, x_base, y_base+16, 1, 1, self.flipx, false)    -- bottom left
-            spr(sprite_br, x_base+8, y_base+16, 1, 1, self.flipx, false)  -- bottom right
+
+            spr(self.flipx and sprite_tr or sprite_tl, x_base, y_base, 1, 1, self.flipx, false)
+            spr(self.flipx and sprite_tl or sprite_tr, x_base+8, y_base, 1, 1, self.flipx, false)
+            spr(self.flipx and sprite_mr or sprite_ml, x_base, y_base+8, 1, 1, self.flipx, false)
+            spr(self.flipx and sprite_ml or sprite_mr, x_base+8, y_base+8, 1, 1, self.flipx, false)
+            spr(self.flipx and sprite_br or sprite_bl, x_base, y_base+16, 1, 1, self.flipx, false)
+            spr(self.flipx and sprite_bl or sprite_br, x_base+8, y_base+16, 1, 1, self.flipx, false)
             
             pal()
 
