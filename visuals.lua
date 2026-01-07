@@ -207,3 +207,26 @@ end
 function close_dialogue()
     dialogue.active=false
 end
+
+function draw_base_map(timeshift)
+    local x0=timeshift and 61 or 0
+    local x1=timeshift and 120 or 59
+    local y0=0
+    local y1=46
+
+    map(x0,y0,0,0,x1,y1)
+end
+
+function draw_map_over(timeshift)
+    local x0=timeshift and 61 or 0
+    local x1=timeshift and 120 or 59
+    local y0=0
+    local y1=46
+
+    for x=x0,x1 do
+        for y=y0,y1 do
+            local tile=mget(x,y)
+            if fget(tile,1) then spr(tile,x*8,y*8) end
+        end
+    end
+end
