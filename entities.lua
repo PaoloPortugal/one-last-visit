@@ -3,20 +3,24 @@
 sprites={
     player={
         still_1=1,
-        still_2=2,
-        walk_1=3,
-        walk_2=4,
-    }
+        still_2=3,
+        walk_1=5,
+        walk_2=7,
+    },
+    chair=16,
+    interact=32
 }
 
 flags={
-    solid=0
+    solid=0,
+    final_chair_spot=6,
+    barrier=7
 }
 
 -- the player and camera logic are taken and adapted from the advanced micro platformer - starting kit by @matthughson
 -- it can be found here: https://www.lexaloffle.com/bbs/?tid=28793
 
-function make_player(s_x, s_y)
+function make_player(s_x,s_y)
 -- creates a new player character
     local p={
         x=s_x,
@@ -27,11 +31,12 @@ function make_player(s_x, s_y)
         max_dx=1,
         max_dy=1,
 
-        w=8, -- width
-        h=8, -- height
+        w=16, -- width
+        h=24, -- height
 
-        -- animations
-        -- use with set_anim()
+        interact_range=4, -- how close to be to interact
+        nearby_interactable=nil, -- object player can interact with right now
+
         anims={
             -- frames indicates how long each sprite is shown
             -- sprites indicates which sprites are shown
@@ -62,27 +67,22 @@ function make_player(s_x, s_y)
 
         -- call once per frame
         update=function(self)
-            local btns=self:input()
+            self:check_interactions()
+            self:input()
             self:handle_horizontal_movement()
             self:handle_vertical_movement()
-            self:handle_animations(btns)
+            self:handle_animations()
         end,
 
         input=function(self)
-            local bl=false
-            local br=false
-
-            local bu=false
-            local bd=false
-
             if btn(⬅️) then
                 if self.dx>0 then self.dx=0 end
                 self.dx-=self.acc
-                bl=true
+                self.flipx=true
             elseif btn(➡️) then
                 if self.dx<0 then self.dx=0 end
                 self.dx+=self.acc
-                br=true
+                self.flipx=false
             else
                 self.dx=0
             end
@@ -91,11 +91,9 @@ function make_player(s_x, s_y)
             if btn(⬆️) then
                 if self.dy>0 then self.dy=0 end
                 self.dy-=self.acc
-                bu=true
             elseif btn(⬇️) then
                 if self.dy<0 then self.dy=0 end
                 self.dy+=self.acc
-                bd=true
             else
                 self.dy=0
             end
@@ -108,7 +106,23 @@ function make_player(s_x, s_y)
                 self.dy=self.dy/norm
             end
 
-            return {bl=bl,br=br,bu=bu,bd=bd}
+            -- check for interact button
+            if btnp(🅾️) and self.nearby_interactable then
+                self.nearby_interactable:interact(self)
+            end
+        end,
+
+        check_objects=function(self)
+            self.nearby_interactable=nil
+            for obj in all(objects) do
+                if obj.interactable then
+                    local dist=sqrt((self.x-obj.x)^2+(self.y-obj.y)^2)
+                    if dist<=self.interact_range then
+                        self.nearby_interactable=obj
+                        break
+                    end
+                end
+            end
         end,
 
         handle_horizontal_movement=function(self)
@@ -160,11 +174,8 @@ function make_player(s_x, s_y)
             return false,nil -- didnt hit a solid tile
         end,
 
-        handle_animations=function(self, btns)
-            local bl=btns.bl
-            local br=btns.br
-
-            self:set_anim("still")
+        handle_animations=function(self)
+            if self.dx!=0 then self:set_anim("walk") else self:set_anim("still") end
 
             -- animation timer
             self.anim_timer-=1
@@ -178,83 +189,58 @@ function make_player(s_x, s_y)
 
         draw=function(self)
             local a=self.anims[self.curranim]
-            local sprite=a.sprites[self.currsprite]
-            pal(1,0) -- map color 1 to behave as black so the eyes look black like they should and we can keep using the actual black as transparent
-            spr(sprite,
-                self.x-(self.w/2),
-                self.y-(self.h/2),
-                self.w/8,self.h/8,
-                self.flipx,
-                false)
-            pal() -- reset the colors to work as normal
+            local sprite_tl=a.sprites[self.currsprite]
+            local sprite_tr=sprite_tl+1
+            local sprite_ml=sprite_tl+16
+            local sprite_mr=sprite_ml+1
+            local sprite_bl=sprite_ml+16
+            local sprite_br=sprite_bl+1
+            
+            if self.dy<0 then pal(7,15) else pal(7,1) end -- this removes the eyes if the player is moving up to not make a new sprite from the back
+            
+            -- draw 3x2 sprite grid
+            local x_base=self.x-(self.w/2)
+            local y_base=self.y-(self.h/2)
+            
+            spr(sprite_tl, x_base, y_base, 1, 1, self.flipx, false)       -- top left
+            spr(sprite_tr, x_base+8, y_base, 1, 1, self.flipx, false)     -- top right
+            spr(sprite_ml, x_base, y_base+8, 1, 1, self.flipx, false)     -- middle left
+            spr(sprite_mr, x_base+8, y_base+8, 1, 1, self.flipx, false)   -- middle right
+            spr(sprite_bl, x_base, y_base+16, 1, 1, self.flipx, false)    -- bottom left
+            spr(sprite_br, x_base+8, y_base+16, 1, 1, self.flipx, false)  -- bottom right
+            
+            pal()
+
+            -- draw interact prompt if near something
+            if self.nearby_interactable then
+                print("Z",self.x-2,self.y-self.h/2-8,7)
+            end
         end,
     }
     return p
 end
 
-function make_chair(s_x, s_y)
--- creates a new player character
+function make_chair(s_x,s_y)
+-- creates a chair object
     local c={
         x=s_x,
         y=s_y,
-        dx=0, -- speed on x axis
-        dy=0, -- speed on y axis
-        acc=0.05,
-        max_dx=1/2,
-        max_dy=1/2,
+        dx=0,
+        dy=0,
 
         w=8, -- width
         h=8, -- height
 
+        interactable=true,
+
         -- call once per frame
         update=function(self)
-            local btns=self:input()
-            self:handle_horizontal_movement()
-            self:handle_vertical_movement()
-            self:handle_animations(btns)
-        end,
-
-        input=function(self)
-            local bl=false
-            local br=false
-
-            local bu=false
-            local bd=false
-
-            if btn(⬅️) then
-                if self.dx>0 then self.dx=0 end
-                self.dx-=self.acc
-                bl=true
-            elseif btn(➡️) then
-                if self.dx<0 then self.dx=0 end
-                self.dx+=self.acc
-                br=true
-            else
-                self.dx=0
+            if self.interacting then
+                self.dx=player.dx
+                self.dy=player.dy
+                self:handle_horizontal_movement()
+                self:handle_vertical_movement()
             end
-            self.dx=mid(-self.max_dx,self.dx,self.max_dx) -- limit horizontal speed
-
-            if btn(⬆️) then
-                if self.dy>0 then self.dy=0 end
-                self.dy-=self.acc
-                bu=true
-            elseif btn(⬇️) then
-                if self.dy<0 then self.dy=0 end
-                self.dy+=self.acc
-                bd=true
-            else
-                self.dy=0
-            end
-            self.dy=mid(-self.max_dy,self.dy,self.max_dy) -- limit vertical speed
-
-            -- normalize diagonal speed
-            if self.dx!=0 and self.dy!=0 then
-                local norm=sqrt(self.dx^2+self.dy^2)
-                self.dx=self.dx/norm
-                self.dy=self.dy/norm
-            end
-
-            return {bl=bl,br=br,bu=bu,bd=bd}
         end,
 
         handle_horizontal_movement=function(self)
@@ -306,33 +292,13 @@ function make_chair(s_x, s_y)
             return false,nil -- didnt hit a solid tile
         end,
 
-        handle_animations=function(self, btns)
-            local bl=btns.bl
-            local br=btns.br
-
-            self:set_anim("still")
-
-            -- animation timer
-            self.anim_timer-=1
-            if self.anim_timer<=0 then
-                self.currsprite+=1
-                local a=self.anims[self.curranim]
-                self.anim_timer=a.frames
-                if self.currsprite>#a.sprites then self.currsprite=1 end -- loop
-            end
-        end,
-
         draw=function(self)
-            local a=self.anims[self.curranim]
-            local sprite=a.sprites[self.currsprite]
-            pal(1,0) -- map color 1 to behave as black so the eyes look black like they should and we can keep using the actual black as transparent
-            spr(sprite,
+            spr(sprites.chair,
                 self.x-(self.w/2),
                 self.y-(self.h/2),
                 self.w/8,self.h/8,
-                self.flipx,
+                false,
                 false)
-            pal() -- reset the colors to work as normal
         end,
     }
     return c
