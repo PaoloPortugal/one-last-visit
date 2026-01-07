@@ -10,9 +10,19 @@ sprites={
             hor_2=9,
             hor_3=11
         },
-        pull=13
+        pull=13,
+        inventory={
+            base=48,
+            ["paper"]=49,
+            ["plant"]=50,
+            ["empty_bucket"]=51,
+            ["water_bucket"]=52,
+            ["hammer"]=53,
+            ["backyard_key"]=54,
+            ["bedroom_key"]=55
+        }
     },
-    chair=16,
+    chair=64,
     interact=32
 }
 
@@ -38,10 +48,11 @@ function make_player(s_x,s_y)
         w=16, -- width
         h=24, -- height
 
-        interact_range=4, -- how close to be to interact
+        interact_range=2, -- how close to be to interact
         nearby_interactable=nil, -- object player can interact with right now
+        interacting=false, -- is the player interacting with anything?
 
-        inventory={},
+        inventory={"paper","plant","empty_bucket","water_bucket","hammer","backyard_key"},
 
         anims={
             -- frames indicates how long each sprite is shown
@@ -80,9 +91,14 @@ function make_player(s_x,s_y)
         end,
 
         -- call once per frame
-        update=function(self, objects)
+        update=function(self, objects, active_dialogue)
             self:check_objects(objects)
-            self:input()
+            if not active_dialogue then
+                self:input()
+            else
+                self.dx=0
+                self.dy=0
+            end
             self:handle_horizontal_movement()
             self:handle_vertical_movement()
             self:handle_animations()
@@ -92,11 +108,11 @@ function make_player(s_x,s_y)
             if btn(⬅️) then
                 if self.dx>0 then self.dx=0 end
                 self.dx-=self.acc
-                self.flipx=true
+                if not self.interacting then self.flipx=true end
             elseif btn(➡️) then
                 if self.dx<0 then self.dx=0 end
                 self.dx+=self.acc
-                self.flipx=false
+                if not self.interacting then self.flipx=false end
             else
                 self.dx=0
             end
@@ -113,16 +129,26 @@ function make_player(s_x,s_y)
             end
             self.dy=mid(-self.max_dy,self.dy,self.max_dy) -- limit vertical speed
 
+            if btnp(🅾️) then
+                if self.nearby_interactable and not self.interacting then
+                    self.nearby_interactable.interacting=true
+                    self.nearby_interactable:interact()
+                    self.interacting=true
+                elseif self.interacting then
+                    self.interacting=false
+                    for obj in all(objects) do
+                        if obj.interacting then
+                            obj.interacting=false
+                        end
+                    end
+                end
+            end
+
             -- normalize diagonal speed
             if self.dx!=0 and self.dy!=0 then
                 local norm=sqrt(self.dx^2+self.dy^2)
                 self.dx=self.dx/norm
                 self.dy=self.dy/norm
-            end
-
-            -- check for interact button
-            if btnp(🅾️) and self.nearby_interactable then
-                self.nearby_interactable:interact(self)
             end
         end,
 
@@ -130,8 +156,23 @@ function make_player(s_x,s_y)
             self.nearby_interactable=nil
             for obj in all(objects) do
                 if obj.interactable then
-                    local dist=sqrt((self.x-obj.x)^2+(self.y-obj.y)^2)
-                    if dist<=self.interact_range then
+                    -- player's bottom 16x8 pixel area bounds
+                    local p_left=self.x-8
+                    local p_right=self.x+8
+                    local p_top=self.y+2
+                    local p_bottom=self.y+10
+                    
+                    -- object bounds
+                    local obj_left=obj.x-(obj.w/2)
+                    local obj_right=obj.x+(obj.w/2)
+                    local obj_top=obj.y-(obj.h/2)
+                    local obj_bottom=obj.y+(obj.h/2)
+                    
+                    -- check if player's bottom area is within interact_range of any side of the object
+                    local h_overlap=p_right>=obj_left-self.interact_range and p_left<=obj_right+self.interact_range
+                    local v_overlap=p_bottom>=obj_top-self.interact_range and p_top<=obj_bottom+self.interact_range
+                    
+                    if h_overlap and v_overlap then
                         self.nearby_interactable=obj
                         break
                     end
@@ -189,12 +230,16 @@ function make_player(s_x,s_y)
         end,
 
         handle_animations=function(self)
-            if self.dx!=0 then
-                self:set_anim("walk_hor")
-            elseif self.dy!=0 then
-                self:set_anim("walk_ver")
+            if self.interacting then
+                self:set_anim("pull")
             else
-                self:set_anim("still")
+                if self.dx!=0 then
+                    self:set_anim("walk_hor")
+                elseif self.dy!=0 then
+                    self:set_anim("walk_ver")
+                else
+                    self:set_anim("still")
+                end
             end
 
             -- animation timer
@@ -231,14 +276,24 @@ function make_player(s_x,s_y)
             
             pal()
 
-            -- draw interact prompt if near something
-            if self.nearby_interactable then
-                print("Z",self.x-2,self.y-self.h/2-8,7)
+        if self.nearby_interactable and not self.interacting then
+                spr(sprites.interact,self.x-4,self.y-self.h/2-10)
             end
         end,
 
-        draw_inventory=function(self)
+        draw_hud=function(self)
+            -- draw inventory
+            local start_x=128-12 -- right side of screen with small margin (128-8-4)
+            local start_y=8 -- 8 pixels from top
+            local slot_size=10 -- spacing between slots
             
+            for i=1,#self.inventory do
+                local item=self.inventory[i]
+                local y_pos=start_y+(i-1)*slot_size
+                
+                spr(sprites.player.inventory.base,start_x,y_pos) -- draw base inventory slot
+                if item then spr(sprites.player.inventory[item],start_x,y_pos) end -- draw item sprite on top
+            end
         end
     }
     return p
@@ -253,17 +308,60 @@ function make_chair(s_x,s_y)
         dy=0,
 
         w=8, -- width
-        h=8, -- height
+        h=16, -- height
+
+        snap_tile_x=11,
+        snap_tile_y=4,
 
         interactable=true,
+        interacting=false,
 
-        -- call once per frame
+        interact=function(self)
+            if self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8 then
+                add(player.inventory,"bedroom_key")
+                self.interactable=false
+            end
+        end,
+
         update=function(self)
             if self.interacting then
-                self.dx=player.dx
-                self.dy=player.dy
-                self:handle_horizontal_movement()
-                self:handle_vertical_movement()
+                if not (self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8) then
+                    self.dx=player.dx
+                    self.dy=player.dy
+                    self:handle_horizontal_movement()
+                    self:handle_vertical_movement()
+
+                    -- snap player to side of chair based on their position
+                    if player.x < self.x then
+                        -- player is on the left
+                        player.x=self.x-8
+                    elseif player.x > self.x then
+                        -- player is on the right
+                        player.x=self.x+8
+                    end
+                    player.y=self.y-4
+                    
+                    -- check if chair bottom touches the snap position
+                    local chair_bottom_tile_x=flr(self.x/8)
+                    local chair_bottom_tile_y=flr((self.y+4)/8)
+                    
+                    if chair_bottom_tile_x==self.snap_tile_x and chair_bottom_tile_y==self.snap_tile_y then
+                        -- snap chair to exact position
+                        self.x=self.snap_tile_x*8+4
+                        self.y=self.snap_tile_y*8
+                        -- stop interaction
+                        self.interacting=false
+                        player.interacting=false
+                    end
+                else
+                    player.x=self.snap_tile_x*8+4
+                    player.y=self.snap_tile_y*8-4
+                    player.dx=0
+                    player.dy=0
+                end
+            else
+                self.dx=0
+                self.dy=0
             end
         end,
 
@@ -274,6 +372,7 @@ function make_chair(s_x,s_y)
             local offset=self.w/2
             if col then
                 self.dx=0
+                player.dx=0
                 if dir==1 then -- right
                     self.x=flr((self.x+(offset))/8)*8-(offset)
                 else -- left
@@ -289,6 +388,7 @@ function make_chair(s_x,s_y)
             local offset=self.h/2
             if col then
                 self.dy=0
+                player.dy=0
                 if dir==1 then -- down
                     self.y=flr((self.y+(offset))/8)*8-(offset)
                 else -- up
@@ -317,10 +417,18 @@ function make_chair(s_x,s_y)
         end,
 
         draw=function(self)
+            -- draw chair top
             spr(sprites.chair,
                 self.x-(self.w/2),
                 self.y-(self.h/2),
-                self.w/8,self.h/8,
+                1,1,
+                false,
+                false)
+            -- draw chair bottom (16 sprites after chair top)
+            spr(sprites.chair+16,
+                self.x-(self.w/2),
+                self.y-(self.h/2)+8,
+                1,1,
                 false,
                 false)
         end,
