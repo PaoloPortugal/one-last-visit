@@ -18,7 +18,6 @@ sprites={
 
 flags={
     solid=0,
-    final_chair_spot=6,
     barrier=7
 }
 
@@ -41,6 +40,8 @@ function make_player(s_x,s_y)
 
         interact_range=4, -- how close to be to interact
         nearby_interactable=nil, -- object player can interact with right now
+
+        inventory={},
 
         anims={
             -- frames indicates how long each sprite is shown
@@ -79,8 +80,8 @@ function make_player(s_x,s_y)
         end,
 
         -- call once per frame
-        update=function(self)
-            self:check_objects()
+        update=function(self, objects)
+            self:check_objects(objects)
             self:input()
             self:handle_horizontal_movement()
             self:handle_vertical_movement()
@@ -125,7 +126,7 @@ function make_player(s_x,s_y)
             end
         end,
 
-        check_objects=function(self)
+        check_objects=function(self, objects)
             self.nearby_interactable=nil
             for obj in all(objects) do
                 if obj.interactable then
@@ -140,49 +141,49 @@ function make_player(s_x,s_y)
 
         handle_horizontal_movement=function(self)
             self.x+=self.dx
-
             local col,dir=self:check_solid_horizontal()
-            local offset=self.w/2
             if col then
                 self.dx=0
+                local offset=6
                 if dir==1 then -- right
-                    self.x=flr((self.x+(offset))/8)*8-(offset)
+                    self.x=flr((self.x+offset)/8)*8-offset
                 else -- left
-                    self.x=ceil((self.x-(offset))/8)*8+(offset)
+                    self.x=ceil((self.x-offset)/8)*8+offset
                 end
             end
         end,
 
         handle_vertical_movement=function(self)
             self.y+=self.dy
-
             local col,dir=self:check_solid_vertical()
-            local offset=self.h/2
             if col then
                 self.dy=0
+                local offset=2
+                local y_base=self.y+10
                 if dir==1 then -- down
-                    self.y=flr((self.y+(offset))/8)*8-(offset)
+                    self.y=flr((y_base+offset)/8)*8-offset-10.1
                 else -- up
-                    self.y=ceil((self.y-(offset))/8)*8+(offset)
+                    self.y=ceil((y_base-offset)/8)*8+offset-10
                 end
             end
         end,
 
-        check_solid_vertical=function(self)
-            local offset=self.h/2
-            for i=-(self.w/3),(self.w/3),2 do
-                if self.dy<0 and (fget(mget((self.x+i)/8,(self.y-(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(self.y-(offset))/8),flags.barrier)) then return true,-1
-                elseif self.dy>=0 and (fget(mget((self.x+i)/8,(self.y+(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(self.y+(offset))/8),flags.barrier)) then return true,1 end
+        check_solid_horizontal=function(self)
+            local offset=6
+            local y_base=self.y+10
+            for i=-2,2,2 do -- only check bottom 4 pixels vertically
+                if self.dx>0 and (fget(mget((self.x+(offset))/8,(y_base+i)/8),flags.solid) or fget(mget((self.x+(offset))/8,(y_base+i)/8),flags.barrier)) then return true,1
+                elseif self.dx<0 and (fget(mget((self.x-(offset))/8,(y_base+i)/8),flags.solid) or fget(mget((self.x-(offset))/8,(y_base+i)/8),flags.barrier)) then return true,-1 end
             end
             return false,nil -- didnt hit a solid tile
         end,
 
-        check_solid_horizontal=function(self)
-            if self.x<=7 then return true end
-            local offset=self.w/2
+        check_solid_vertical=function(self)
+            local offset=2
+            local y_base=self.y+10
             for i=-(self.w/3),(self.w/3),2 do
-                if self.dx>0 and (fget(mget((self.x+(offset))/8,(self.y+i)/8),flags.solid) or fget(mget((self.x+(offset))/8,(self.y+i)/8),flags.barrier)) then return true,1
-                elseif self.dx<0 and (fget(mget((self.x-(offset))/8,(self.y+i)/8),flags.solid) or fget(mget((self.x-(offset))/8,(self.y+i)/8),flags.barrier)) then return true,-1 end
+                if self.dy<0 and (fget(mget((self.x+i)/8,(y_base-(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(y_base-(offset))/8),flags.barrier)) then return true,-1
+                elseif self.dy>=0 and (fget(mget((self.x+i)/8,(y_base+(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(y_base+(offset))/8),flags.barrier)) then return true,1 end
             end
             return false,nil -- didnt hit a solid tile
         end,
@@ -235,6 +236,10 @@ function make_player(s_x,s_y)
                 print("Z",self.x-2,self.y-self.h/2-8,7)
             end
         end,
+
+        draw_inventory=function(self)
+            
+        end
     }
     return p
 end
