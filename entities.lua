@@ -307,7 +307,7 @@ function make_chair(s_x,s_y)
         dx=0,
         dy=0,
 
-        w=8, -- width
+        w=16, -- width
         h=16, -- height
 
         snap_tile_x=11,
@@ -317,7 +317,7 @@ function make_chair(s_x,s_y)
         interacting=false,
 
         interact=function(self)
-            if self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8 then
+            if self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8+4 then
                 add(player.inventory,"bedroom_key")
                 self.interactable=false
             end
@@ -325,7 +325,7 @@ function make_chair(s_x,s_y)
 
         update=function(self)
             if self.interacting then
-                if not (self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8) then
+                if not (self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8+4) then
                     self.dx=player.dx
                     self.dy=player.dy
                     self:handle_horizontal_movement()
@@ -335,9 +335,11 @@ function make_chair(s_x,s_y)
                     if player.x < self.x then
                         -- player is on the left
                         player.x=self.x-8
+                        player.flipx=false
                     elseif player.x > self.x then
                         -- player is on the right
                         player.x=self.x+8
+                        player.flipx=true
                     end
                     player.y=self.y-4
                     
@@ -348,7 +350,7 @@ function make_chair(s_x,s_y)
                     if chair_bottom_tile_x==self.snap_tile_x and chair_bottom_tile_y==self.snap_tile_y then
                         -- snap chair to exact position
                         self.x=self.snap_tile_x*8+4
-                        self.y=self.snap_tile_y*8
+                        self.y=self.snap_tile_y*8+4
                         -- stop interaction
                         self.interacting=false
                         player.interacting=false
@@ -418,19 +420,18 @@ function make_chair(s_x,s_y)
 
         draw=function(self)
             -- draw chair top
-            spr(sprites.chair,
-                self.x-(self.w/2),
-                self.y-(self.h/2),
-                1,1,
-                false,
-                false)
-            -- draw chair bottom (16 sprites after chair top)
-            spr(sprites.chair+16,
-                self.x-(self.w/2),
-                self.y-(self.h/2)+8,
-                1,1,
-                false,
-                false)
+            local x_base=self.x-(self.w/2)
+            local y_base=self.y-(self.h/2)
+            pal(3,0)
+            local sprite_tl=sprites.chair
+            local sprite_tr=sprite_tl+1
+            local sprite_ml=sprite_tl+16
+            local sprite_mr=sprite_ml+1
+            spr(sprite_tl, x_base, y_base, 1, 1, false, false)
+            spr(sprite_tr, x_base+8, y_base, 1, 1, false, false)
+            spr(sprite_ml, x_base, y_base+8, 1, 1, false, false)
+            spr(sprite_mr, x_base+8, y_base+8, 1, 1, false, false)
+            pal()
         end,
     }
     return c
