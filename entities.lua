@@ -132,8 +132,8 @@ function make_player(s_x,s_y)
             if btnp(🅾️) then
                 if self.nearby_interactable and not self.interacting then
                     self.nearby_interactable.interacting=true
-                    self.nearby_interactable:interact()
                     self.interacting=true
+                    self.nearby_interactable:interact()
                 elseif self.interacting then
                     self.interacting=false
                     for obj in all(objects) do
@@ -286,6 +286,8 @@ function make_player(s_x,s_y)
             local start_x=128-12 -- right side of screen with small margin (128-8-4)
             local start_y=8 -- 8 pixels from top
             local slot_size=10 -- spacing between slots
+
+            pal(2,0)
             
             for i=1,#self.inventory do
                 local item=self.inventory[i]
@@ -294,6 +296,8 @@ function make_player(s_x,s_y)
                 spr(sprites.player.inventory.base,start_x,y_pos) -- draw base inventory slot
                 if item then spr(sprites.player.inventory[item],start_x,y_pos) end -- draw item sprite on top
             end
+
+            pal()
         end
     }
     return p
@@ -318,8 +322,16 @@ function make_chair(s_x,s_y)
 
         interact=function(self)
             if self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8+4 then
-                add(player.inventory,"bedroom_key")
-                self.interactable=false
+                if not (player.x==self.snap_tile_x*8+4 and player.y==self.snap_tile_y*8-4) then
+                    player.x=self.snap_tile_x*8+4
+                    player.y=self.snap_tile_y*8-4
+                    player.interacting=false
+                else
+                    add(player.inventory,"bedroom_key")
+                    self.interactable=false
+                    self.interacting=false
+                    player.interacting=false
+                end
             end
         end,
 
@@ -360,6 +372,7 @@ function make_chair(s_x,s_y)
                     player.y=self.snap_tile_y*8-4
                     player.dx=0
                     player.dy=0
+                    player:set_anim("still")
                 end
             else
                 self.dx=0
