@@ -6,7 +6,7 @@ function make_pantry()
     local wall_start=16
     local bottom=22
 
-    mset(left,top,59)
+    mset(left,top,58)
     for y=top+1,wall_start do mset(left,y,57) end
     mset(left,wall_start,62)
 

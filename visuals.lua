@@ -209,6 +209,7 @@ function close_dialogue()
 end
 
 function draw_base_map(timeshift)
+    pal(15,0)
     local x0=timeshift and 61 or 0
     local x1=timeshift and 120 or 59
     local y0=0
@@ -218,9 +219,11 @@ function draw_base_map(timeshift)
     local height=y1-y0+1
 
     map(x0,y0,0,0,width,height)
+    pal()
 end
 
 function draw_map_over(timeshift)
+    pal(15,0)
     local x0=timeshift and 61 or 0
     local x1=timeshift and 120 or 59
     local y0=0
@@ -232,4 +235,5 @@ function draw_map_over(timeshift)
             if fget(tile,1) then spr(tile,x*8,y*8) end
         end
     end
+    pal()
 end
