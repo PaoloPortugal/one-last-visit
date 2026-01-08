@@ -213,8 +213,11 @@ function draw_base_map(timeshift)
     local x1=timeshift and 120 or 59
     local y0=0
     local y1=46
+    
+    local width=x1-x0+1
+    local height=y1-y0+1
 
-    map(x0,y0,0,0,x1,y1)
+    map(x0,y0,0,0,width,height)
 end
 
 function draw_map_over(timeshift)
