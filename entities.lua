@@ -314,8 +314,8 @@ function make_chair(s_x,s_y)
         w=16, -- width
         h=16, -- height
 
-        snap_tile_x=11,
-        snap_tile_y=4,
+        snap_tile_x=6,
+        snap_tile_y=26,
 
         interactable=true,
         interacting=false,
@@ -465,8 +465,8 @@ function make_camera(target)
 
         --min and max positions of camera.
         --the edges of the level.
-        pos_min={x=72,y=1},
-        pos_max={x=64*8-72,y=64*8-72},
+        pos_min={x=1,y=1},
+        pos_max={x=128*8,y=64*8},
        
         shake_remaining=0,
         shake_force=0,
