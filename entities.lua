@@ -15,15 +15,19 @@ sprites={
             base=48,
             ["paper"]=49,
             ["plant"]=50,
-            ["empty_bucket"]=51,
-            ["water_bucket"]=52,
+            ["empty bucket"]=51,
+            ["water bucket"]=52,
             ["hammer"]=53,
-            ["backyard_key"]=54,
-            ["bedroom_key"]=55
+            ["backyard key"]=54,
+            ["bedroom key"]=55
         }
     },
     chair=64,
-    interact=32
+    interact=32,
+    safe={
+        closed=96,
+        open=98
+    }
 }
 
 flags={
@@ -54,7 +58,9 @@ function make_player(s_x,s_y)
 
         timeshift=false,
 
-        inventory={"paper","plant","empty_bucket","water_bucket","hammer","backyard_key"},
+        safecracking=false,
+
+        inventory={"paper","plant","empty bucket","water bucket","backyard key"},
 
         unlocked_rooms={},
 
@@ -98,7 +104,7 @@ function make_player(s_x,s_y)
         update=function(self, objects, active_dialogue)
             self.timeshift=self.x>60*8
             self:check_objects(objects)
-            if not dialogue.active then
+            if not dialogue.active and not self.safecracking then
                 self:input()
             else
                 self.dx=0
@@ -234,6 +240,10 @@ function make_player(s_x,s_y)
             return false,nil -- didnt hit a solid tile
         end,
 
+        get_item=function(self, item)
+            add(self.inventory,item)
+        end,
+
         handle_animations=function(self)
             if self.interacting then
                 self:set_anim("pull")
@@ -308,7 +318,7 @@ function make_player(s_x,s_y)
     return p
 end
 
-function make_chair(s_x,s_y)
+function make_chair(s_x, s_y)
 -- creates a chair object
     local c={
         x=s_x,
@@ -325,6 +335,8 @@ function make_chair(s_x,s_y)
         interactable=true,
         interacting=false,
 
+        dead=false,
+
         interact=function(self)
             if self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8+4 then
                 if not (player.x==self.snap_tile_x*8+4 and player.y==self.snap_tile_y*8-4) then
@@ -332,7 +344,7 @@ function make_chair(s_x,s_y)
                     player.y=self.snap_tile_y*8-4
                     player.interacting=false
                 else
-                    add(player.inventory,"bedroom_key")
+                    player:get_item("bedroom key")
                     self.interactable=false
                     self.interacting=false
                     player.interacting=false
@@ -437,7 +449,6 @@ function make_chair(s_x,s_y)
         end,
 
         draw=function(self)
-            -- draw chair top
             local x_base=self.x-(self.w/2)
             local y_base=self.y-(self.h/2)
             pal(3,0)
@@ -468,6 +479,8 @@ function make_clock(s_x, s_y)
 
             interactable=true,
             interacting=false,
+
+            dead=false,
 
             -- transition system by claude
 
@@ -573,6 +586,8 @@ function make_talkative(s_x, s_y, dialogue)
         interactable=true,
         interacting=false,
 
+        dead=false,
+
         interact=function(self)
             if not dialogue.active then
                 spawn_dialogue(player.x,player.y-16,dialogue)
@@ -587,6 +602,150 @@ function make_talkative(s_x, s_y, dialogue)
     }
 
     return t
+end
+
+function make_safe(s_x, s_y)
+-- creates a safe requiring a combination 
+    local s={
+        x=s_x,
+        y=s_y,
+
+        w=16, -- width
+        h=16, -- height
+
+        interactable=true,
+        interacting=false,
+
+        open=false,
+
+        dead=false,
+
+        -- safecracking system by claude
+        code={0,0,0,0}, -- the 4 digits the player is entering
+        current_digit=1, -- which digit is selected (1-4)
+        correct_code={1,4,5,1}, -- the correct combination
+        input_delay=0, -- delay before accepting input
+
+        interact=function(self)
+            if not self.open then
+                if player.safecracking then
+                    player.interacting=false
+                    self.interacting=false
+                elseif not dialogue.active then
+                    spawn_dialogue(player.x,player.y-16,{"There's a note here, it reads:","'Password: My little angel's age and height'"})
+                    player.interacting=false
+                    self.interacting=false
+                    player.safecracking=true
+                    self.input_delay=5
+                end
+            else
+                player:get_item("hammer")
+                player.interacting=false
+                self.interacting=false
+                self.interactable=false
+            end
+        end,
+
+        update=function(self)
+            if player.safecracking then
+
+                player.dx=0
+                player.dy=0
+                player.x=self.x
+                player.y=self.y+8
+                player.set_anim("still")
+
+                if not dialogue.active then
+
+                    -- countdown input delay
+                    if self.input_delay > 0 then
+                        self.input_delay -= 1
+                        return
+                    end
+
+                    -- handle input for safe cracking
+                    if btnp(⬅️) then
+                        self.current_digit=max(1,self.current_digit-1)
+                    elseif btnp(➡️) then
+                        self.current_digit=min(4,self.current_digit+1)
+                    elseif btnp(⬆️) then
+                        self.code[self.current_digit]=(self.code[self.current_digit]+1)%10
+                    elseif btnp(⬇️) then
+                        self.code[self.current_digit]=(self.code[self.current_digit]-1+10)%10
+                    elseif btnp(🅾️) then
+                        -- check if code is correct
+                        local correct=true
+                        for i=1,4 do
+                            if self.code[i]!=self.correct_code[i] then
+                                correct=false
+                                break
+                            end
+                        end
+                        
+                        if correct then
+                            self.open=true
+                        else
+                        end
+                        
+                        player.safecracking=false
+                        player.interacting=false
+                        self.interacting=false
+                    end
+                end
+            end
+        end,
+
+        draw=function(self)
+            if not self.interactable then pal(8,5) end
+
+            local x_base=self.x-(self.w/2)
+            local y_base=self.y-(self.h/2)
+            local sprite_tl=self.open and sprites.safe.open or sprites.safe.closed
+            local sprite_tr=sprite_tl+1
+            local sprite_ml=sprite_tl+16
+            local sprite_mr=sprite_ml+1
+            spr(sprite_tl, x_base, y_base, 1, 1, false, false)
+            spr(sprite_tr, x_base+8, y_base, 1, 1, false, false)
+            spr(sprite_ml, x_base, y_base+8, 1, 1, false, false)
+            spr(sprite_mr, x_base+8, y_base+8, 1, 1, false, false)
+
+            pal()
+
+            -- draw code input interface if safecracking
+            if player.safecracking then
+                local cell_size=12
+                local spacing=2
+                local total_width=(cell_size*4)+(spacing*3)
+                local total_height=cell_size
+                
+                -- position above the safe (similar to dialogue positioning)
+                local box_x=player.x-(total_width/2)
+                local box_y=player.y-16-total_height
+                
+                for i=1,4 do
+                    local x=box_x+((i-1)*(cell_size+spacing))
+                    
+                    -- draw cell background
+                    rectfill(x,box_y,x+cell_size-1,box_y+cell_size-1,0)
+                    
+                    -- draw cell border (white for unselected, blue for selected)
+                    local border_col=7
+                    if i==self.current_digit then
+                        border_col=12 -- light blue
+                    end
+                    rect(x,box_y,x+cell_size-1,box_y+cell_size-1,border_col)
+                    
+                    -- draw the number centered in the cell
+                    local num_str=tostr(self.code[i])
+                    local text_x=x+4
+                    local text_y=box_y+3
+                    print(num_str,text_x,text_y,7)
+                end
+            end
+        end,
+    }
+
+    return s
 end
 
 function make_camera(target)

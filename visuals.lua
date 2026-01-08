@@ -90,13 +90,22 @@ function load_current_dialogue()
             dialogue.lines[3]=sub(line_without_hyphen,1,#line_without_hyphen-1).."-"
             -- start next text with hyphen + last char
             remaining_text="-"..last_char
-        end
-        
-        for i=4,#all_lines do
-            if remaining_text!="" and remaining_text!="-" then
-                remaining_text=remaining_text.." "
+            
+            -- add remaining lines without space after hyphenated part
+            for i=4,#all_lines do
+                remaining_text=remaining_text..all_lines[i]
+                if i<#all_lines then
+                    remaining_text=remaining_text.." "
+                end
             end
-            remaining_text=remaining_text..all_lines[i]
+        else
+            -- normal split, no hyphenation
+            for i=4,#all_lines do
+                if remaining_text!="" then
+                    remaining_text=remaining_text.." "
+                end
+                remaining_text=remaining_text..all_lines[i]
+            end
         end
         
         -- insert remaining text as next dialogue
@@ -259,7 +268,7 @@ function update_dialogue()
         end
     end
     -- handle z button press
-    if btnp(4) then -- z button
+    if btnp(🅾️) then -- z button
         if is_dialogue_finished() then
             -- move to next dialogue or close
             if dialogue.current_idx<#dialogue.texts then
