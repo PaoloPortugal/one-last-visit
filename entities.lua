@@ -98,7 +98,7 @@ function make_player(s_x,s_y)
         update=function(self, objects, active_dialogue)
             self.timeshift=self.x>60*8
             self:check_objects(objects)
-            if not active_dialogue then
+            if not dialogue.active then
                 self:input()
             else
                 self.dx=0
@@ -558,6 +558,35 @@ function make_clock(s_x, s_y)
     local c2=make_base_clock(s_x+60*8,s_y,-60*8)
 
     return c1,c2
+end
+
+function make_talkative(s_x, s_y, dialogue)
+-- creates an object with just dialogue
+
+    local t={
+        x=s_x,
+        y=s_y,
+
+        w=8, -- width
+        h=8, -- height
+
+        interactable=true,
+        interacting=false,
+
+        interact=function(self)
+            if not dialogue.active then
+                spawn_dialogue(player.x,player.y-16,dialogue)
+                player.interacting=false
+                self.interacting=false
+            end
+        end,
+
+        update=function(self) end,
+
+        draw=function(self) end,
+    }
+
+    return t
 end
 
 function make_camera(target)
