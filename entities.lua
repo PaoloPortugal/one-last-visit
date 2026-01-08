@@ -56,6 +56,8 @@ function make_player(s_x,s_y)
 
         inventory={"paper","plant","empty_bucket","water_bucket","hammer","backyard_key"},
 
+        unlocked_rooms={},
+
         anims={
             -- frames indicates how long each sprite is shown
             -- sprites indicates which sprites are shown
@@ -94,7 +96,7 @@ function make_player(s_x,s_y)
 
         -- call once per frame
         update=function(self, objects, active_dialogue)
-            self.timeshift=self.y>60*8
+            self.timeshift=self.x>60*8
             self:check_objects(objects)
             if not active_dialogue then
                 self:input()
