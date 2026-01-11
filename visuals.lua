@@ -15,7 +15,7 @@ dialogue={
     char_idx=0,
     char_timer=0,
     char_speed=1, -- frames per char (lower=faster)
-    max_width=80, -- max box width in pixels
+    max_width=75, -- max box width in pixels
     padding=4,
     border=1,
     input_delay=0 -- add this new field
@@ -64,8 +64,8 @@ function load_current_dialogue()
     dialogue.text=dialogue.texts[dialogue.current_idx]
     dialogue.char_idx=0
     dialogue.char_timer=0
-    -- pre-calculate word wrapping with hyphenation
-    local all_lines=wrap_text_with_hyphen(dialogue.text,dialogue.max_width)
+    -- pre-calculate word wrapping without hyphenation
+    local all_lines=wrap_text_no_hyphen(dialogue.text,dialogue.max_width)
     
     -- if more than 3 lines, split into multiple dialogues
     if #all_lines > 3 then
@@ -75,37 +75,13 @@ function load_current_dialogue()
             add(dialogue.lines,all_lines[i])
         end
         
-        -- check if last line ends with a hyphen (mid-word break)
-        local last_line=dialogue.lines[3]
-        local ends_with_hyphen=sub(last_line,#last_line)=="-"
-        
-        -- reconstruct remaining text
+        -- reconstruct remaining text from remaining lines
         local remaining_text=""
-        
-        if ends_with_hyphen then
-            -- remove hyphen and get last character before it
-            local line_without_hyphen=sub(last_line,1,#last_line-1)
-            local last_char=sub(line_without_hyphen,#line_without_hyphen)
-            -- update current line to end with hyphen
-            dialogue.lines[3]=sub(line_without_hyphen,1,#line_without_hyphen-1).."-"
-            -- start next text with hyphen + last char
-            remaining_text="-"..last_char
-            
-            -- add remaining lines without space after hyphenated part
-            for i=4,#all_lines do
-                remaining_text=remaining_text..all_lines[i]
-                if i<#all_lines then
-                    remaining_text=remaining_text.." "
-                end
+        for i=4,#all_lines do
+            if remaining_text!="" then
+                remaining_text=remaining_text.." "
             end
-        else
-            -- normal split, no hyphenation
-            for i=4,#all_lines do
-                if remaining_text!="" then
-                    remaining_text=remaining_text.." "
-                end
-                remaining_text=remaining_text..all_lines[i]
-            end
+            remaining_text=remaining_text..all_lines[i]
         end
         
         -- insert remaining text as next dialogue
@@ -127,65 +103,31 @@ function load_current_dialogue()
     dialogue.height=#dialogue.lines*6
 end
 
-function wrap_text_with_hyphen(text,max_w)
+function wrap_text_no_hyphen(text,max_w)
     local lines={}
     local words=split_words(text)
     local line=""
     local line_w=0
+    
     for word in all(words) do
         local word_w=#word*4
-        if line_w+word_w<=max_w then
-            -- word fits on current line
-            if line=="" then
-                line=word
-                line_w=word_w
-            else
-                line=line.." "..word
-                line_w=line_w+4+word_w
-            end
+        
+        if line=="" then
+            -- first word on line, always add it
+            line=word
+            line_w=word_w
+        elseif line_w+4+word_w<=max_w then
+            -- word fits on current line with space
+            line=line.." "..word
+            line_w=line_w+4+word_w
         else
-            -- word doesn't fit - try to hyphenate
-            if line=="" then
-                -- word is longer than max_w, must break it
-                local chars_that_fit=flr(max_w/4)-1 -- -1 for hyphen
-                line=sub(word,1,chars_that_fit).."-"
-                add(lines,line)
-                -- put rest of word back for next iteration
-                word=sub(word,chars_that_fit+1)
-                line=""
-                line_w=0
-                -- continue processing the rest
-                word_w=#word*4
-                if word_w<=max_w then
-                    line=word
-                    line_w=word_w
-                end
-            else
-                -- check if we can fit part of the word with hyphen
-                local space_left=max_w-line_w-4 -- -4 for space
-                local chars_that_fit=flr(space_left/4)-1 -- -1 for hyphen
-                if chars_that_fit>=3 then
-                    -- enough room to hyphenate
-                    line=line.." "..sub(word,1,chars_that_fit).."-"
-                    add(lines,line)
-                    word=sub(word,chars_that_fit+1)
-                    line=""
-                    line_w=0
-                    -- continue with rest of word
-                    word_w=#word*4
-                    if word_w<=max_w then
-                        line=word
-                        line_w=word_w
-                    end
-                else
-                    -- not enough room, start new line
-                    add(lines,line)
-                    line=word
-                    line_w=word_w
-                end
-            end
+            -- word doesn't fit, start new line
+            add(lines,line)
+            line=word
+            line_w=word_w
         end
     end
+    
     -- add last line
     if line!="" then
         add(lines,line)
