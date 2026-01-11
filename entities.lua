@@ -101,7 +101,7 @@ function make_player(s_x,s_y)
         end,
 
         -- call once per frame
-        update=function(self, objects, active_dialogue)
+        update=function(self)
             self.timeshift=self.x>60*8
             self:check_objects(objects)
             if not dialogue.active and not self.safecracking then
@@ -163,7 +163,7 @@ function make_player(s_x,s_y)
             end
         end,
 
-        check_objects=function(self, objects)
+        check_objects=function(self)
             self.nearby_interactable=nil
             for obj in all(objects) do
                 if obj.interactable then
@@ -468,108 +468,30 @@ end
 
 function make_clock(s_x, s_y)
 -- creates a clock object and its mirror
-
     local function make_base_clock(b_x, b_y, offset)
         local c={
             x=b_x,
             y=b_y,
-
             w=16, -- width
             h=16, -- height
-
             interactable=true,
             interacting=false,
-
             dead=false,
-
-            -- transition system by claude
-
-            fade_state = 0,  -- 0=none, 1=fade out, 2=white, 3=fade in
-            fade_timer = 0,
-            fade_duration = 30,  -- frames for fade out/in
-            white_duration = 15,  -- frames to stay white
-
-            start_fade=function(self)
-                self.fade_state = 1
-                self.fade_timer = 0
-            end,
-
-            update_fade=function(self)
-                if self.fade_state == 0 then return end
-                
-                self.fade_timer += 1
-                
-                if self.fade_state == 1 then
-                    -- fading to white
-                    if self.fade_timer >= self.fade_duration then
-                    self.fade_state = 2
-                    self.fade_timer = 0
-                    end
-                elseif self.fade_state == 2 then
-                    -- stay white
-                    if self.fade_timer >= self.white_duration then
-                    self.fade_state = 3
-                    self.fade_timer = 0
-                    end
-                elseif self.fade_state == 3 then
-                    -- fade back to normal
-                    if self.fade_timer >= self.fade_duration then
-                    self.fade_state = 0
-                    self.fade_timer = 0
-                    end
-                end
-            end,
-
-            draw_fade=function(self)
-                if self.fade_state == 0 then return end
-                
-                local amt = 0
-                
-                if self.fade_state == 1 then
-                    amt = self.fade_timer / self.fade_duration
-                elseif self.fade_state == 2 then
-                    amt = 1
-                elseif self.fade_state == 3 then
-                    amt = 1 - (self.fade_timer / self.fade_duration)
-                end
-                
-                -- apply white overlay
-                if amt > 0 then
-                    for i=0,15 do
-                        local c = i
-                        if amt >= 0.8 then c = 7
-                        elseif amt >= 0.6 then c = min(c+2,7)
-                        elseif amt >= 0.4 then c = min(c+1,7)
-                        elseif amt >= 0.2 then 
-                            if c < 6 then c = min(c+1,7) end
-                        end
-                        pal(i,c)
-                    end
-                end
-                -- DON'T reset palette here - let it persist!
-            end,
-
             interact=function(self)
-                self:start_fade()
+                start_fade()
                 player.x+=offset
                 player.interacting=false
                 cam=make_camera(player)
             end,
-
             update=function(self)
-                self:update_fade()
             end,
-
             draw=function(self)
-                self:draw_fade()
             end,
         }
         return c
     end
-
-    local c1=make_base_clock(s_x,s_y,60*8)
-    local c2=make_base_clock(s_x+60*8,s_y,-60*8)
-
+    local c1=make_base_clock(s_x,s_y,61*8)
+    local c2=make_base_clock(s_x+61*8,s_y,-61*8)
     return c1,c2
 end
 

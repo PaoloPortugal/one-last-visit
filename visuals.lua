@@ -331,17 +331,80 @@ function close_dialogue()
     dialogue.active=false
 end
 
+-- fade system by claude
+function start_fade()
+    fade_state = 1
+    fade_timer = 0
+end
+
+function update_fade()
+    if fade_state == 0 then return end
+    
+    fade_timer += 1
+    
+    if fade_state == 1 then
+        -- fading to white
+        if fade_timer >= fade_duration then
+            fade_state = 2
+            fade_timer = 0
+        end
+    elseif fade_state == 2 then
+        -- stay white
+        if fade_timer >= white_duration then
+            fade_state = 3
+            fade_timer = 0
+        end
+    elseif fade_state == 3 then
+        -- fade back to normal
+        if fade_timer >= fade_duration then
+            fade_state = 0
+            fade_timer = 0
+        end
+    end
+end
+
+function draw_fade()
+    if fade_state == 0 then return end
+    
+    local amt = 0
+    
+    if fade_state == 1 then
+        amt = fade_timer / fade_duration
+    elseif fade_state == 2 then
+        amt = 1
+    elseif fade_state == 3 then
+        amt = 1 - (fade_timer / fade_duration)
+    end
+    
+    -- apply white overlay
+    if amt > 0 then
+        for i=0,15 do
+            local c = i
+            if amt >= 0.8 then c = 7
+            elseif amt >= 0.6 then c = min(c+2,7)
+            elseif amt >= 0.4 then c = min(c+1,7)
+            elseif amt >= 0.2 then 
+                if c < 6 then c = min(c+1,7) end
+            end
+            pal(i,c)
+        end
+    end
+end
+
 function draw_base_map(timeshift)
     pal(15,0)
     local x0=timeshift and 61 or 0
     local x1=timeshift and 120 or 59
     local y0=0
-    local y1=46
+    local y1=31
     
-    local width=x1-x0+1
-    local height=y1-y0+1
+    for x=x0,x1 do
+        for y=y0,y1 do
+            local tile=mget(x,y)
+            spr(tile,x*8,y*8)
+        end
+    end
 
-    map(x0,y0,0,0,width,height)
     pal()
 end
 
@@ -350,7 +413,7 @@ function draw_map_over(timeshift)
     local x0=timeshift and 61 or 0
     local x1=timeshift and 120 or 59
     local y0=0
-    local y1=46
+    local y1=31
 
     for x=x0,x1 do
         for y=y0,y1 do
