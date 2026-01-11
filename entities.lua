@@ -340,7 +340,7 @@ function make_chair(s_x, s_y)
         w=16, -- width
         h=16, -- height
 
-        snap_tile_x=70,
+        snap_tile_x=71,
         snap_tile_y=20,
 
         interactable=true,
@@ -349,10 +349,10 @@ function make_chair(s_x, s_y)
         dead=false,
 
         interact=function(self)
-            if self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8+4 then
-                if not (player.x==self.snap_tile_x*8+4 and player.y==self.snap_tile_y*8-4) then
-                    player.x=self.snap_tile_x*8+4
-                    player.y=self.snap_tile_y*8-4
+            if self.x==self.snap_tile_x*8 and self.y==self.snap_tile_y*8-4 then
+                if not (player.x==self.snap_tile_x*8 and player.y==self.snap_tile_y*8-12) then
+                    player.x=self.snap_tile_x*8
+                    player.y=self.snap_tile_y*8-12
                     player.interacting=false
                 else
                     player:get_item("bedroom key")
@@ -367,7 +367,7 @@ function make_chair(s_x, s_y)
 
         update=function(self)
             if self.interacting then
-                if not (self.x==self.snap_tile_x*8+4 and self.y==self.snap_tile_y*8+4) then
+                if not (self.x==self.snap_tile_x*8 and self.y==self.snap_tile_y*8-4) then
                     self.dx=player.dx
                     self.dy=player.dy
                     self:handle_horizontal_movement()
@@ -391,16 +391,16 @@ function make_chair(s_x, s_y)
                     
                     if chair_bottom_tile_x==self.snap_tile_x and chair_bottom_tile_y==self.snap_tile_y then
                         -- snap chair to exact position
-                        self.x=self.snap_tile_x*8+4
-                        self.y=self.snap_tile_y*8+4
+                        self.x=self.snap_tile_x*8
+                        self.y=self.snap_tile_y*8-4
                         -- stop interaction
                         self.interacting=false
                         player.interacting=false
                         shelf.dead=true
                     end
                 else
-                    player.x=self.snap_tile_x*8+4
-                    player.y=self.snap_tile_y*8-4
+                    player.x=self.snap_tile_x*8
+                    player.y=self.snap_tile_y*8-12
                     player.dx=0
                     player.dy=0
                     player:set_anim("still")
