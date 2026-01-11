@@ -60,6 +60,10 @@ function make_player(s_x,s_y)
 
         safecracking=false,
 
+        first_timeshift=true,
+
+        second_timeshift=false,
+
         inventory={},
 
         unlocked_rooms={},
@@ -301,10 +305,10 @@ function make_player(s_x,s_y)
             spr(self.flipx and sprite_bl or sprite_br, x_base+8, y_base+16, 1, 1, self.flipx, false)
             
             pal()
+        end,
 
-        if self.nearby_interactable and not self.interacting then
-                spr(sprites.interact,self.x-4,self.y-self.h/2-10)
-            end
+        draw_exclamation=function(self)
+            if self.nearby_interactable and not self.interacting then spr(sprites.interact,self.x-4,self.y-self.h/2-10) end
         end,
 
         draw_hud=function(self)
@@ -496,6 +500,14 @@ function make_clock(s_x, s_y)
                 player.x+=offset
                 player.interacting=false
                 cam=make_camera(player)
+                if player.first_timeshift then
+                    spawn_dialogue(player.x,player.y-16,{"WHOA!","WHAT JUST HAPPENED!?","This looks just like it did back in the day...","Did I just... time-travel...?"})
+                    player.first_timeshift=false
+                    player.second_timeshift=true
+                elseif player.second_timeshift then
+                    spawn_dialogue(player.x,player.y-16,{"And now I'm back...?","I mean... I guess I've seen weirder stuff"})
+                    player.second_timeshift=false
+                end
             end,
             update=function(self)
             end,
@@ -740,7 +752,7 @@ function make_desk(s_x, s_y)
                     self.dead=true
                     player:remove_item("paper")
                 else
-                    spawn_dialogue(player.x,player.y-16,"I could write a letter here if I had some paper")
+                    spawn_dialogue(player.x,player.y-16,"If I had some paper I could write grandma a reminder to get the construction company to begin work on the pantry earlier")
                     player.interacting=false
                     self.interacting=false
                 end
@@ -849,6 +861,8 @@ function make_flower_patch(s_x, s_y)
                             end
                         end
                         present_flower_patch.dead=true
+                        local new_present_flower_patch=make_talkative(present_flower_patch.x,present_flower_patch.y,"This looks great!")
+                        add(objects,new_present_flower_patch)
                         self.dead=true
                         spawn_dialogue(player.x,player.y-16,"All done! Let's hope this looks better in the future")
                     else
@@ -857,7 +871,7 @@ function make_flower_patch(s_x, s_y)
                 else
                     if player:has_item("plant") then
                         player:remove_item("plant")
-                        mset(92,12,166)
+                        mset(92,12,172)
                         self.planted=true
                         spawn_dialogue(player.x,player.y-16,"Now I have to water it")
                     else
@@ -878,8 +892,8 @@ function make_flower_patch(s_x, s_y)
     return fp
 end
 
-function make_door(s_x, s_y, key, clue)
-    local d={
+function make_past_bedroom_door(s_x, s_y)
+    local pbd={
             x=s_x,
             y=s_y,
             w=16, -- width
@@ -890,16 +904,16 @@ function make_door(s_x, s_y, key, clue)
             dead=false,
 
             interact=function(self)
-                if player:has_item(key) then
+                if player:has_item("bedroom key") then
                     for x=self.x/8,self.x/8+1 do
                         for y=self.y/8-3,self.y/8 do
                             mset(x,y,68)
                         end
                     end
-                    player:remove_item(key)
+                    player:remove_item("bedroom key")
                     self.dead=true
                 else
-                    spawn_dialogue(player.x,player.y-16,clue)
+                    spawn_dialogue(player.x,player.y-16,"Grandma always used to hide the key from me when I was left alone, it has to be near here")
                 end
                 self.interacting=false
                 player.interacting=false
@@ -912,7 +926,81 @@ function make_door(s_x, s_y, key, clue)
 
             end,
         }
-    return d
+    return pbd
+end
+
+function make_past_backyard_door(s_x ,s_y)
+    local pbd={
+            x=s_x,
+            y=s_y,
+            w=16, -- width
+            h=32, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                if player:has_item("backyard key") then
+                    for x=self.x/8,self.x/8+1 do
+                        for y=self.y/8-3,self.y/8 do
+                            mset(x,y,68)
+                        end
+                    end
+                    if present_backyard_door.dead then player:remove_item("backyard key") end
+                    self.dead=true
+                else
+                    spawn_dialogue(player.x,player.y-16,"If I recall correctly I left a copy of this door's key in the old unfinished pantry")
+                end
+                self.interacting=false
+                player.interacting=false
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+
+            end,
+        }
+    return pbd
+end
+
+function make_present_backyard_door(s_x ,s_y)
+    local pbd={
+            x=s_x,
+            y=s_y,
+            w=16, -- width
+            h=32, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                if player:has_item("backyard key") then
+                    for x=self.x/8,self.x/8+1 do
+                        for y=self.y/8-3,self.y/8 do
+                            mset(x,y,68)
+                        end
+                    end
+                    if past_backyard_door.dead then player:remove_item("backyard key") end
+                    self.dead=true
+                else
+                    spawn_dialogue(player.x,player.y-16,"If I recall correctly I left a copy of this door's key in the old unfinished pantry")
+                end
+                self.interacting=false
+                player.interacting=false
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+
+            end,
+        }
+    return pbd
 end
 
 function make_seesaw(s_x, s_y)
@@ -928,6 +1016,7 @@ function make_seesaw(s_x, s_y)
 
             interact=function(self)
                 if player:has_item("hammer") then
+                    spawn_dialogue(player.x,player.y-16,"Let's fix it!")
                     mset(20,8,128)
                     mset(21,8,129)
                     mset(22,8,130)
