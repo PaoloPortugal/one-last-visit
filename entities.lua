@@ -721,6 +721,16 @@ function make_safe(s_x, s_y)
                 local box_x=player.x-(total_width/2)
                 local box_y=player.y-16-total_height
                 
+                -- draw "🅾️ to confirm" text above the code boxes with black background
+                local confirm_text="🅾️ to confirm"
+                local text_width=#confirm_text*4
+                local text_x=player.x-(text_width/2)
+                local text_y=box_y-8
+                
+                -- draw black background for text
+                rectfill(text_x-2,text_y-1,text_x+text_width+2,text_y+6,0)
+                print(confirm_text,text_x-1,text_y,6)
+                
                 for i=1,4 do
                     local x=box_x+((i-1)*(cell_size+spacing))
                     
@@ -1117,7 +1127,11 @@ function make_pantry_blockade(s_x, s_y)
             dead=false,
 
             interact=function(self)
-                spawn_dialogue(player.x,player.y-16,{"Wait... There's supposed to be a pantry here!", "It was unfinished, but I was hoping the construction company wouldn't just abandon it...", "They didn't even bother painting the wall the right!"})
+                if player:has_item("paper") then
+                    spawn_dialogue(player.x,player.y-16,{"This unfinished pantry... If I could leave some reminder for grandma to get the construction company to begin work earlier..."})
+                else
+                    spawn_dialogue(player.x,player.y-16,{"Wait... There's supposed to be a pantry here!", "It was unfinished, but I was hoping the construction company wouldn't just abandon it...", "They didn't even bother painting the wall the right!"})
+                end
                 player.pantry_seen=true
                 player.interacting=false
                 self.interacting=false
