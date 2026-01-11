@@ -276,6 +276,9 @@ function make_player(s_x,s_y)
 
         get_item=function(self, item)
             add(self.inventory,item)
+            local text="Got "..item.."!"
+            text=swap_case(text)
+            add_message(text)
         end,
 
         has_item=function(self, item)

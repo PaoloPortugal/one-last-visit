@@ -1,5 +1,48 @@
 -- visuals
 
+-- message system from my old game wumpus world, by claude
+
+messages={}
+
+function add_message(text)
+-- adds a new message to the notification system
+	add(messages, {
+		text = text,
+		time = 150 -- 5 seconds at 30fps = 150 frames
+	})
+end
+
+function update_messages()
+-- updates message timers and removes expired ones
+	for i = #messages, 1, -1 do
+		messages[i].time -= 1
+		if messages[i].time <= 0 then
+			deli(messages, i)
+		end
+	end
+end
+
+function draw_messages()
+	-- draws all active messages stacked from bottom-left upwards
+	local y = 126 -- start near bottom
+
+	for i = #messages, 1, -1 do
+		local msg = messages[i]
+		local txt = msg.text
+		local txt_width = #txt * 4 + 4
+		local x = 2 -- left-aligned
+
+		-- background box
+		rectfill(x, y - 8, x + txt_width, y, 0)
+
+		-- text
+		print(txt, x + 2, y - 6, 7)
+
+		-- move up for next message
+		y -= 10
+	end
+end
+
 -- dialogue system by claude
 
 dialogue={

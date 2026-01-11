@@ -109,6 +109,7 @@ function update_game()
     update_fade()
     cam:update()
     update_dialogue()
+    update_messages()
 end
 
 function draw_game()
@@ -139,6 +140,8 @@ function draw_game()
     camera(0,0)
 
     player:draw_hud()
+
+    draw_messages()
 end
 
 function win()
