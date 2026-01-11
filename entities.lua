@@ -738,6 +738,7 @@ function make_desk(s_x, s_y)
                     player.interacting=false
                     self.interacting=false
                     self.dead=true
+                    player:remove_item("paper")
                 else
                     spawn_dialogue(player.x,player.y-16,"I could write a letter here if I had some paper")
                     player.interacting=false
@@ -820,6 +821,137 @@ function make_sink(s_x, s_y)
             end,
         }
 
+    return s
+end
+
+function make_flower_patch(s_x, s_y)
+    local fp={
+            x=s_x,
+            y=s_y,
+            w=24, -- width
+            h=32, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            planted=false,
+
+            interact=function(self)
+                if self.planted then
+                    if player:has_item("water bucket") then
+                        player:remove_item("water bucket")
+                        local i=0
+                        for x=31,33 do
+                            for y=10,13 do
+                                mset(x,y,160+i)
+                                i+=1
+                            end
+                        end
+                        present_flower_patch.dead=true
+                        self.dead=true
+                        spawn_dialogue(player.x,player.y-16,"All done! Let's hope this looks better in the future")
+                    else
+                        spawn_dialogue(player.x,player.y-16,"Now I have to water it")
+                    end
+                else
+                    if player:has_item("plant") then
+                        player:remove_item("plant")
+                        mset(92,12,166)
+                        self.planted=true
+                        spawn_dialogue(player.x,player.y-16,"Now I have to water it")
+                    else
+                        spawn_dialogue(player.x,player.y-16,"I'm sure I could plant something here!")
+                    end
+                end
+                self.interacting=false
+                player.interacting=false
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+
+            end,
+        }
+    return fp
+end
+
+function make_door(s_x, s_y, key, clue)
+    local d={
+            x=s_x,
+            y=s_y,
+            w=16, -- width
+            h=32, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                if player:has_item(key) then
+                    for x=self.x/8,self.x/8+1 do
+                        for y=self.y/8-3,self.y/8 do
+                            mset(x,y,68)
+                        end
+                    end
+                    player:remove_item(key)
+                    self.dead=true
+                else
+                    spawn_dialogue(player.x,player.y-16,clue)
+                end
+                self.interacting=false
+                player.interacting=false
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+
+            end,
+        }
+    return d
+end
+
+function make_seesaw(s_x, s_y)
+    local s={
+            x=s_x,
+            y=s_y,
+            w=32, -- width
+            h=16, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                if player:has_item("hammer") then
+                    mset(20,8,128)
+                    mset(21,8,129)
+                    mset(22,8,130)
+                    mset(23,8,131)
+                    mset(20,9,144)
+                    mset(21,9,145)
+                    mset(22,9,146)
+                    mset(23,9,147)
+                    self.dead=true
+                    player:remove_item("hammer")
+                else
+                    spawn_dialogue(player.x,player.y-16,"It's broken! I bet I could fix this with a hammer")
+                end
+                self.interacting=false
+                player.interacting=false
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+
+            end,
+        }
     return s
 end
 
