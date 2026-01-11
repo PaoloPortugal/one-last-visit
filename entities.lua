@@ -19,7 +19,10 @@ sprites={
             ["water bucket"]=52,
             ["hammer"]=53,
             ["backyard key"]=54,
-            ["bedroom key"]=55
+            ["bedroom key"]=55,
+            ["moofys' Wumpus (easter egg)"]=177,
+            ["Elhombrellave's key (easter egg)"]=176,
+            ["Maku's musical note (easter egg)"]=178
         }
     },
     chair=64,
@@ -398,6 +401,7 @@ function make_chair(s_x, s_y)
                     player.interacting=false
                     mset(70,15,197)
                     mset(71,15,198)
+                    sfx(14)
                 end
             end
         end,
@@ -434,6 +438,7 @@ function make_chair(s_x, s_y)
                         self.interacting=false
                         player.interacting=false
                         shelf.dead=true
+                        sfx(15)
                     end
                 else
                     player.x=self.snap_tile_x*8
@@ -540,6 +545,8 @@ function make_clock(s_x, s_y)
                 elseif player.second_timeshift then
                     spawn_dialogue(player.x,player.y-16,{"And now I'm back...?","I mean... I guess I've seen weirder stuff"})
                     player.second_timeshift=false
+                else
+                    sfx(13)
                 end
             end,
             update=function(self)
@@ -623,6 +630,7 @@ function make_safe(s_x, s_y)
                 player.interacting=false
                 self.interacting=false
                 self.interactable=false
+                sfx(14)
             end
         end,
 
@@ -664,6 +672,7 @@ function make_safe(s_x, s_y)
                         
                         if correct then
                             self.open=true
+                            sfx(16)
                         else
                         end
                         
@@ -752,6 +761,7 @@ function make_giver(s_x, s_y, reward)
                 self.dead=true
                 player.interacting=false
                 self.interacting=false
+                sfx(14)
             end,
 
             update=function(self)
@@ -785,6 +795,7 @@ function make_desk(s_x, s_y)
                         self.interacting=false
                         self.dead=true
                         player:remove_item("paper")
+                        sfx(14)
                     else
                         spawn_dialogue(player.x,player.y-16,"I could write something here, but what?")
                         player.interacting=false
@@ -829,6 +840,7 @@ function make_plant(s_x, s_y)
                 self.dead=true
                 player.interacting=false
                 self.interacting=false
+                sfx(14)
             end,
 
             update=function(self)
@@ -861,6 +873,7 @@ function make_sink(s_x, s_y)
                     self.interacting=false
                     past_sink.dead=true
                     present_sink.dead=true
+                    sfx(16)
                 else
                     spawn_dialogue(player.x,player.y-16,"There's running water here if I ever need it")
                     player.interacting=false
@@ -907,6 +920,7 @@ function make_flower_patch(s_x, s_y)
                         local new_present_flower_patch=make_talkative(present_flower_patch.x,present_flower_patch.y,"This looks great!")
                         add(objects,new_present_flower_patch)
                         self.dead=true
+                        sfx(16)
                         spawn_dialogue(player.x,player.y-16,"All done! Let's hope this looks better in the future")
                     else
                         spawn_dialogue(player.x,player.y-16,"Now I have to water it")
@@ -955,6 +969,7 @@ function make_past_bedroom_door(s_x, s_y)
                     end
                     player:remove_item("bedroom key")
                     self.dead=true
+                    sfx(15)
                 else
                     spawn_dialogue(player.x,player.y-16,"Grandma always used to hide the key from me when I was left alone, it has to be near here")
                 end
@@ -992,6 +1007,7 @@ function make_past_backyard_door(s_x ,s_y)
                     end
                     if present_backyard_door.dead then player:remove_item("backyard key") end
                     self.dead=true
+                    sfx(15)
                 else
                     spawn_dialogue(player.x,player.y-16,"If I recall correctly I left a copy of this door's key in the old unfinished pantry")
                 end
@@ -1029,6 +1045,7 @@ function make_present_backyard_door(s_x ,s_y)
                     end
                     if past_backyard_door.dead then player:remove_item("backyard key") end
                     self.dead=true
+                    sfx(15)
                 else
                     spawn_dialogue(player.x,player.y-16,"If I recall correctly I left a copy of this door's key in the old unfinished pantry")
                 end
@@ -1070,6 +1087,7 @@ function make_seesaw(s_x, s_y)
                     mset(23,9,147)
                     self.dead=true
                     player:remove_item("hammer")
+                    sfx(14)
                 else
                     spawn_dialogue(player.x,player.y-16,"It's broken! I bet I could fix this with a hammer")
                 end
@@ -1110,6 +1128,36 @@ function make_pantry_blockade(s_x, s_y)
             draw=function(self) end,
         }
     return s
+end
+
+function make_easter_egg(s_x, s_y, reward, visible)
+    local e={
+            x=s_x,
+            y=s_y,
+            w=8, -- width
+            h=8, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                player:get_item(reward)
+                self.dead=true
+                player.interacting=false
+                self.interacting=false
+                sfx(14)
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+                if visible then spr(sprites.player.inventory[reward],self.x,self.y,1,1,false,false) end
+            end,
+        }
+
+    return e
 end
 
 function make_camera(target)
