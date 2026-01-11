@@ -107,7 +107,17 @@ function make_player(s_x,s_y)
 
         -- call once per frame
         update=function(self)
-            self.timeshift=self.x>60*8
+            if not self.timeshift then
+                if self.x>60*8 then
+                    self.timeshift=true
+                    music(1)
+                end
+            else
+                if self.x<60*8 then
+                    self.timeshift=false
+                    music(2)
+                end
+            end
             self:check_objects(objects)
             if not dialogue.active and not self.safecracking then
                 self:input()
@@ -126,7 +136,7 @@ function make_player(s_x,s_y)
                     self.can_win=true
                     for x=24,26 do
                         for y=25,30 do
-                            mset(x,y,173)
+                            mset(x,y,79)
                         end
                     end
                 end
