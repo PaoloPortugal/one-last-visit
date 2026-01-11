@@ -26,7 +26,7 @@ sprites={
     interact=32,
     safe={
         closed=96,
-        open=98
+        open=99
     }
 }
 
@@ -60,7 +60,7 @@ function make_player(s_x,s_y)
 
         safecracking=false,
 
-        inventory={"paper","plant","empty bucket","water bucket","backyard key"},
+        inventory={},
 
         unlocked_rooms={},
 
@@ -244,6 +244,17 @@ function make_player(s_x,s_y)
             add(self.inventory,item)
         end,
 
+        has_item=function(self, item)
+            for i in all(self.inventory) do
+                if i==item then return true end
+            end
+            return false
+        end,
+
+        remove_item=function(self, item)
+            del(self.inventory,item)
+        end,
+
         handle_animations=function(self)
             if self.interacting then
                 self:set_anim("pull")
@@ -302,7 +313,7 @@ function make_player(s_x,s_y)
             local start_y=8 -- 8 pixels from top
             local slot_size=10 -- spacing between slots
 
-            pal(2,0)
+            pal(15,0)
             
             for i=1,#self.inventory do
                 local item=self.inventory[i]
@@ -329,8 +340,8 @@ function make_chair(s_x, s_y)
         w=16, -- width
         h=16, -- height
 
-        snap_tile_x=6,
-        snap_tile_y=26,
+        snap_tile_x=70,
+        snap_tile_y=20,
 
         interactable=true,
         interacting=false,
@@ -348,6 +359,8 @@ function make_chair(s_x, s_y)
                     self.interactable=false
                     self.interacting=false
                     player.interacting=false
+                    mset(70,15,197)
+                    mset(71,15,198)
                 end
             end
         end,
@@ -383,6 +396,7 @@ function make_chair(s_x, s_y)
                         -- stop interaction
                         self.interacting=false
                         player.interacting=false
+                        shelf.dead=true
                     end
                 else
                     player.x=self.snap_tile_x*8+4
@@ -497,7 +511,6 @@ end
 
 function make_talkative(s_x, s_y, dialogue)
 -- creates an object with just dialogue
-
     local t={
         x=s_x,
         y=s_y,
@@ -532,7 +545,7 @@ function make_safe(s_x, s_y)
         x=s_x,
         y=s_y,
 
-        w=16, -- width
+        w=24, -- width
         h=16, -- height
 
         interactable=true,
@@ -618,18 +631,29 @@ function make_safe(s_x, s_y)
         end,
 
         draw=function(self)
-            if not self.interactable then pal(8,5) end
+            if not self.interactable then
+                pal(8,5)
+                pal(13,5)
+                pal(2,5)
+                pal(9,5)
+            end
 
             local x_base=self.x-(self.w/2)
             local y_base=self.y-(self.h/2)
             local sprite_tl=self.open and sprites.safe.open or sprites.safe.closed
-            local sprite_tr=sprite_tl+1
-            local sprite_ml=sprite_tl+16
-            local sprite_mr=sprite_ml+1
+            local sprite_tm=sprite_tl+1      -- top middle
+            local sprite_tr=sprite_tl+2      -- top right
+            local sprite_ml=sprite_tl+16     -- middle left
+            local sprite_mm=sprite_ml+1      -- middle middle
+            local sprite_mr=sprite_ml+2      -- middle right
+            
+            -- Draw 3x2 sprite grid (24x16 pixels)
             spr(sprite_tl, x_base, y_base, 1, 1, false, false)
-            spr(sprite_tr, x_base+8, y_base, 1, 1, false, false)
+            spr(sprite_tm, x_base+8, y_base, 1, 1, false, false)
+            spr(sprite_tr, x_base+16, y_base, 1, 1, false, false)
             spr(sprite_ml, x_base, y_base+8, 1, 1, false, false)
-            spr(sprite_mr, x_base+8, y_base+8, 1, 1, false, false)
+            spr(sprite_mm, x_base+8, y_base+8, 1, 1, false, false)
+            spr(sprite_mr, x_base+16, y_base+8, 1, 1, false, false)
 
             pal()
 
@@ -640,24 +664,20 @@ function make_safe(s_x, s_y)
                 local total_width=(cell_size*4)+(spacing*3)
                 local total_height=cell_size
                 
-                -- position above the safe (similar to dialogue positioning)
                 local box_x=player.x-(total_width/2)
                 local box_y=player.y-16-total_height
                 
                 for i=1,4 do
                     local x=box_x+((i-1)*(cell_size+spacing))
                     
-                    -- draw cell background
                     rectfill(x,box_y,x+cell_size-1,box_y+cell_size-1,0)
                     
-                    -- draw cell border (white for unselected, blue for selected)
                     local border_col=7
                     if i==self.current_digit then
-                        border_col=12 -- light blue
+                        border_col=12
                     end
                     rect(x,box_y,x+cell_size-1,box_y+cell_size-1,border_col)
                     
-                    -- draw the number centered in the cell
                     local num_str=tostr(self.code[i])
                     local text_x=x+4
                     local text_y=box_y+3
@@ -666,6 +686,139 @@ function make_safe(s_x, s_y)
             end
         end,
     }
+
+    return s
+end
+
+function make_giver(s_x, s_y, reward)
+-- makes an object that gets added to your inventory when interacted with
+    local g={
+            x=s_x,
+            y=s_y,
+            w=8, -- width
+            h=8, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                player:get_item(reward)
+                self.dead=true
+                player.interacting=false
+                self.interacting=false
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+                spr(sprites.player.inventory[reward],self.x,self.y,1,1,false,false)
+            end,
+        }
+
+    return g
+end
+
+function make_desk(s_x, s_y)
+    local d={
+            x=s_x,
+            y=s_y,
+            w=24, -- width
+            h=16, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                if player:has_item("paper") then
+                    spawn_dialogue(player.x,player.y-16,{"Alright, I'll write grandma a reminder to get the construction company to begin work on that pantry earlier","Aaaand...","Done!","I really hope this works..."})
+                    make_pantry()
+                    player.interacting=false
+                    self.interacting=false
+                    self.dead=true
+                else
+                    spawn_dialogue(player.x,player.y-16,"I could write a letter here if I had some paper")
+                    player.interacting=false
+                    self.interacting=false
+                end
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+
+            end,
+        }
+
+    return d
+end
+
+function make_plant(s_x, s_y)
+    local p={
+            x=s_x,
+            y=s_y,
+            w=8, -- width
+            h=8, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                spawn_dialogue(player.x,player.y-16,{"Hmm, I'm pretty sure this plant blooms into grandma's favorite flower"})
+                player:get_item("plant")
+                self.dead=true
+                player.interacting=false
+                self.interacting=false
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+                spr(sprites.player.inventory.plant,self.x,self.y,1,1,false,false)
+            end,
+        }
+
+    return p
+end
+
+function make_sink(s_x, s_y)
+    local s={
+            x=s_x,
+            y=s_y,
+            w=16, -- width
+            h=24, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                if player:has_item("empty bucket") then
+                    player:remove_item("empty bucket")
+                    player:get_item("water bucket")
+                    player.interacting=false
+                    self.interacting=false
+                    past_sink.dead=true
+                    present_sink.dead=true
+                else
+                    spawn_dialogue(player.x,player.y-16,"There's running water here if I ever need it")
+                    player.interacting=false
+                    self.interacting=false
+                end
+            end,
+
+            update=function(self)
+            end,
+
+            draw=function(self)
+
+            end,
+        }
 
     return s
 end

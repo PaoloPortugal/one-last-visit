@@ -28,4 +28,9 @@ function make_pantry()
     for y=top+1,wall_start-1 do mset(right,y,57) end
     mset(right,wall_start,62)
 
+    local backyard_key=make_giver(47*8,7*8,"backyard key")
+    add(objects,backyard_key)
+
+    pantry_blockade.dead=true
+
 end

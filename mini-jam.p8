@@ -16,8 +16,6 @@ function _init()
     spawn_player()
     spawn_objects()
     init_fade_vars()
-    messages={}
-    make_pantry()
     --spawn_dialogue(player.x,player.y-16,{"So this old place finally got sold, huh","I used to spend lots of time here with grandma... Good times...", "I wanna have a look at the backyard, it was always so peaceful there", "Huh, isn't the time on that clock wrong?"})
 end
 
@@ -41,7 +39,9 @@ function _draw()
     draw_base_map(player.timeshift)
 
     for obj in all(objects) do
+        pal(15,0)
         obj:draw()
+        pal()
     end
 
     player:draw()
@@ -66,11 +66,22 @@ function spawn_player()
 end
 
 function spawn_objects()
-    local chair=make_chair(13*8,22*8)
+    local chair=make_chair(107*8,21*8)
     local clock_1,clock_1_m=make_clock(23*8,21*8)
-    local safe=make_safe(16*8,23*8)
+    local safe=make_safe(75*8+4,6*8)
+    local empty_bucket=make_giver(22*8,13*8,"empty bucket")
+    shelf=make_talkative(70*8,18*8,"Looks like there's a key on the top shelf, if I could stand on something I might reach it")
+    local paper=make_giver(107*8,23*8-4,"paper")
+    local desk=make_desk(65*8,18*8)
+    local plant=make_plant(65*8,22*8)
+    pantry_blockade=make_talkative(42*8,15*8,{"Wait... There's supposed to be a pantry here!", "It was unfinished, but I was hoping the construction company wouldn't just abandon it...", "They didn't even bother painting the wall the right!"})
+    local past_swing=make_talkative(82*8,9*8,"Grandpa and I used to play here all the time, no wonder his hips hurt so much whenever I came over!")
+    past_sink=make_sink(109*8,16*8)
+    present_sink=make_sink(48*8,16*8)
+    local fridge=make_talkative(98*8,16*8,"Full of fresh groceries!")
+    wall_marks=make_talkative(91*8,20*8,{"There's a couple markings on the wall, we used to make one each year on my birthday to mark how tall I was getting","Last one says: 14 years old, 5\"1'"})
     clocks={clock_1,clock_1_m}
-    objects={chair,clock_1,clock_1_m,safe}
+    objects={chair,clock_1,clock_1_m,safe,empty_bucket,shelf,paper,plant,desk,pantry_blockade,past_swing,past_sink,present_sink,fridge,wall_marks}
 end
 
 function init_fade_vars()
@@ -83,6 +94,9 @@ end
 function update_objects()
     for obj in all(objects) do
         obj:update()
+    end
+    for obj in all(objects) do
+        if obj.dead then del(objects,obj) end
     end
 end
 
