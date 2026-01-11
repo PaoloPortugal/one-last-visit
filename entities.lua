@@ -30,11 +30,6 @@ sprites={
     }
 }
 
-flags={
-    solid=0,
-    barrier=7
-}
-
 -- the player and camera logic are taken and adapted from the advanced micro platformer - starting kit by @matthughson
 -- it can be found here: https://www.lexaloffle.com/bbs/?tid=28793
 
@@ -63,6 +58,12 @@ function make_player(s_x,s_y)
         first_timeshift=true,
 
         second_timeshift=false,
+
+        entered_backyard=false,
+
+        can_win=false,
+
+        pantry_seen=false,
 
         inventory={},
 
@@ -116,6 +117,25 @@ function make_player(s_x,s_y)
             end
             self:handle_horizontal_movement()
             self:handle_vertical_movement()
+            if flr(self.y/8)==15 and (flr(self.x/8)==28 or flr(self.x/8)==29) then
+                if not self.entered_backyard then
+                    spawn_dialogue(player.x,player.y-16,"Hmm, I should probably fix this place up before I leave")
+                    self.entered_backyard=true
+                elseif not self.can_win and (present_flower_patch.dead and present_seesaw.dead) then
+                    spawn_dialogue(player.x,player.y-16,"Everything seems to be much better now, I guess it's time to leave")
+                    self.can_win=true
+                    for x=24,26 do
+                        for y=25,30 do
+                            mset(x,y,173)
+                        end
+                    end
+                end
+            end
+
+            if self.can_win and (flr(self.y/8)==29 and (flr(self.x/8)==24 or flr(self.x/8)==25 or flr(self.x/8)==26)) then
+                win()
+            end
+            
             self:handle_animations()
         end,
 
@@ -228,8 +248,8 @@ function make_player(s_x,s_y)
             local offset=6
             local y_base=self.y+10
             for i=-2,2,2 do -- only check bottom 4 pixels vertically
-                if self.dx>0 and (fget(mget((self.x+(offset))/8,(y_base+i)/8),flags.solid) or fget(mget((self.x+(offset))/8,(y_base+i)/8),flags.barrier)) then return true,1
-                elseif self.dx<0 and (fget(mget((self.x-(offset))/8,(y_base+i)/8),flags.solid) or fget(mget((self.x-(offset))/8,(y_base+i)/8),flags.barrier)) then return true,-1 end
+                if self.dx>0 and (fget(mget((self.x+(offset))/8,(y_base+i)/8),0) or fget(mget((self.x+(offset))/8,(y_base+i)/8),7)) then return true,1
+                elseif self.dx<0 and (fget(mget((self.x-(offset))/8,(y_base+i)/8),0) or fget(mget((self.x-(offset))/8,(y_base+i)/8),7)) then return true,-1 end
             end
             return false,nil -- didnt hit a solid tile
         end,
@@ -238,8 +258,8 @@ function make_player(s_x,s_y)
             local offset=2
             local y_base=self.y+10
             for i=-(self.w/3),(self.w/3),2 do
-                if self.dy<0 and (fget(mget((self.x+i)/8,(y_base-(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(y_base-(offset))/8),flags.barrier)) then return true,-1
-                elseif self.dy>=0 and (fget(mget((self.x+i)/8,(y_base+(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(y_base+(offset))/8),flags.barrier)) then return true,1 end
+                if self.dy<0 and (fget(mget((self.x+i)/8,(y_base-(offset))/8),0) or fget(mget((self.x+i)/8,(y_base-(offset))/8),7)) then return true,-1
+                elseif self.dy>=0 and (fget(mget((self.x+i)/8,(y_base+(offset))/8),0) or fget(mget((self.x+i)/8,(y_base+(offset))/8),7)) then return true,1 end
             end
             return false,nil -- didnt hit a solid tile
         end,
@@ -450,8 +470,8 @@ function make_chair(s_x, s_y)
         check_solid_vertical=function(self)
             local offset=self.h/2
             for i=-(self.w/3),(self.w/3),2 do
-                if self.dy<0 and (fget(mget((self.x+i)/8,(self.y-(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(self.y-(offset))/8),flags.barrier)) then return true,-1
-                elseif self.dy>=0 and (fget(mget((self.x+i)/8,(self.y+(offset))/8),flags.solid) or fget(mget((self.x+i)/8,(self.y+(offset))/8),flags.barrier)) then return true,1 end
+                if self.dy<0 and (fget(mget((self.x+i)/8,(self.y-(offset))/8),0) or fget(mget((self.x+i)/8,(self.y-(offset))/8),7)) then return true,-1
+                elseif self.dy>=0 and (fget(mget((self.x+i)/8,(self.y+(offset))/8),0) or fget(mget((self.x+i)/8,(self.y+(offset))/8),7)) then return true,1 end
             end
             return false,nil -- didnt hit a solid tile
         end,
@@ -460,8 +480,8 @@ function make_chair(s_x, s_y)
             if self.x<=7 then return true end
             local offset=self.w/2
             for i=-(self.w/3),(self.w/3),2 do
-                if self.dx>0 and (fget(mget((self.x+(offset))/8,(self.y+i)/8),flags.solid) or fget(mget((self.x+(offset))/8,(self.y+i)/8),flags.barrier)) then return true,1
-                elseif self.dx<0 and (fget(mget((self.x-(offset))/8,(self.y+i)/8),flags.solid) or fget(mget((self.x-(offset))/8,(self.y+i)/8),flags.barrier)) then return true,-1 end
+                if self.dx>0 and (fget(mget((self.x+(offset))/8,(self.y+i)/8),0) or fget(mget((self.x+(offset))/8,(self.y+i)/8),7)) then return true,1
+                elseif self.dx<0 and (fget(mget((self.x-(offset))/8,(self.y+i)/8),0) or fget(mget((self.x-(offset))/8,(self.y+i)/8),7)) then return true,-1 end
             end
             return false,nil -- didnt hit a solid tile
         end,
@@ -745,14 +765,24 @@ function make_desk(s_x, s_y)
 
             interact=function(self)
                 if player:has_item("paper") then
-                    spawn_dialogue(player.x,player.y-16,{"Alright, I'll write grandma a reminder to get the construction company to begin work on that pantry earlier","Aaaand...","Done!","I really hope this works..."})
-                    make_pantry()
-                    player.interacting=false
-                    self.interacting=false
-                    self.dead=true
-                    player:remove_item("paper")
+                    if player.pantry_seen then
+                        spawn_dialogue(player.x,player.y-16,{"Alright, I'll write grandma a reminder to get the construction company to begin work on that pantry earlier","Aaaand...","Done!","I really hope this works..."})
+                        make_pantry()
+                        player.interacting=false
+                        self.interacting=false
+                        self.dead=true
+                        player:remove_item("paper")
+                    else
+                        spawn_dialogue(player.x,player.y-16,"I could write something here, but what?")
+                        player.interacting=false
+                        self.interacting=false
+                    end
                 else
-                    spawn_dialogue(player.x,player.y-16,"If I had some paper I could write grandma a reminder to get the construction company to begin work on the pantry earlier")
+                    if player.pantry_seen then
+                        spawn_dialogue(player.x,player.y-16,"If I had some paper I could write grandma a reminder to get the construction company to begin work on the pantry earlier")
+                    else
+                        spawn_dialogue(player.x,player.y-16,"If I had some paper I guess I could write something here, but what?")
+                    end
                     player.interacting=false
                     self.interacting=false
                 end
@@ -1040,6 +1070,31 @@ function make_seesaw(s_x, s_y)
             draw=function(self)
 
             end,
+        }
+    return s
+end
+
+function make_pantry_blockade(s_x, s_y)
+        local s={
+            x=s_x,
+            y=s_y,
+            w=8, -- width
+            h=8, -- height
+
+            interactable=true,
+            interacting=false,
+            dead=false,
+
+            interact=function(self)
+                spawn_dialogue(player.x,player.y-16,{"Wait... There's supposed to be a pantry here!", "It was unfinished, but I was hoping the construction company wouldn't just abandon it...", "They didn't even bother painting the wall the right!"})
+                player.pantry_seen=true
+                player.interacting=false
+                self.interacting=false
+            end,
+
+            update=function(self) end,
+
+            draw=function(self) end,
         }
     return s
 end
