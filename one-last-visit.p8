@@ -100,6 +100,7 @@ function update_objects()
 end
 
 function start_game()
+    reload()
     spawn_player()
     spawn_objects()
     init_fade_vars()
