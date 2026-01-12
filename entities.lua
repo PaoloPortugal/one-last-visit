@@ -414,16 +414,9 @@ function make_chair(s_x, s_y)
                     self:handle_horizontal_movement()
                     self:handle_vertical_movement()
 
-                    -- snap player to side of chair based on their position
-                    if player.x < self.x then
-                        -- player is on the left
-                        player.x=self.x-8
-                        player.flipx=false
-                    elseif player.x > self.x then
-                        -- player is on the right
-                        player.x=self.x+8
-                        player.flipx=true
-                    end
+                    -- snap player to the left of the chair
+                    player.x=self.x-8
+                    player.flipx=false
                     player.y=self.y-4
                     
                     -- check if chair bottom touches the snap position
